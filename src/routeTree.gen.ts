@@ -9,61 +9,310 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppReportsRouteImport } from './routes/_app.reports'
+import { Route as AppLiveRouteImport } from './routes/_app.live'
+import { Route as AppIncidentsRouteImport } from './routes/_app.incidents'
+import { Route as AppEvidenceRouteImport } from './routes/_app.evidence'
+import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
+import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
+import { Route as AppWorkersIndexRouteImport } from './routes/_app.workers.index'
+import { Route as AppMachinesIndexRouteImport } from './routes/_app.machines.index'
+import { Route as AppWorkersIdRouteImport } from './routes/_app.workers.$id'
+import { Route as AppMachinesIdRouteImport } from './routes/_app.machines.$id'
 
-const IndexRoute = IndexRouteImport.update({
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLiveRoute = AppLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIncidentsRoute = AppIncidentsRouteImport.update({
+  id: '/incidents',
+  path: '/incidents',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEvidenceRoute = AppEvidenceRouteImport.update({
+  id: '/evidence',
+  path: '/evidence',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlertsRoute = AppAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWorkersIndexRoute = AppWorkersIndexRouteImport.update({
+  id: '/workers/',
+  path: '/workers/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMachinesIndexRoute = AppMachinesIndexRouteImport.update({
+  id: '/machines/',
+  path: '/machines/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWorkersIdRoute = AppWorkersIdRouteImport.update({
+  id: '/workers/$id',
+  path: '/workers/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMachinesIdRoute = AppMachinesIdRouteImport.update({
+  id: '/machines/$id',
+  path: '/machines/$id',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/login': typeof LoginRoute
+  '/alerts': typeof AppAlertsRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/evidence': typeof AppEvidenceRoute
+  '/incidents': typeof AppIncidentsRoute
+  '/live': typeof AppLiveRoute
+  '/reports': typeof AppReportsRoute
+  '/machines/$id': typeof AppMachinesIdRoute
+  '/workers/$id': typeof AppWorkersIdRoute
+  '/machines/': typeof AppMachinesIndexRoute
+  '/workers/': typeof AppWorkersIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/alerts': typeof AppAlertsRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/evidence': typeof AppEvidenceRoute
+  '/incidents': typeof AppIncidentsRoute
+  '/live': typeof AppLiveRoute
+  '/reports': typeof AppReportsRoute
+  '/': typeof AppIndexRoute
+  '/machines/$id': typeof AppMachinesIdRoute
+  '/workers/$id': typeof AppWorkersIdRoute
+  '/machines': typeof AppMachinesIndexRoute
+  '/workers': typeof AppWorkersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_app/alerts': typeof AppAlertsRoute
+  '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/evidence': typeof AppEvidenceRoute
+  '/_app/incidents': typeof AppIncidentsRoute
+  '/_app/live': typeof AppLiveRoute
+  '/_app/reports': typeof AppReportsRoute
+  '/_app/': typeof AppIndexRoute
+  '/_app/machines/$id': typeof AppMachinesIdRoute
+  '/_app/workers/$id': typeof AppWorkersIdRoute
+  '/_app/machines/': typeof AppMachinesIndexRoute
+  '/_app/workers/': typeof AppWorkersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/alerts'
+    | '/analytics'
+    | '/evidence'
+    | '/incidents'
+    | '/live'
+    | '/reports'
+    | '/machines/$id'
+    | '/workers/$id'
+    | '/machines/'
+    | '/workers/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/login'
+    | '/alerts'
+    | '/analytics'
+    | '/evidence'
+    | '/incidents'
+    | '/live'
+    | '/reports'
+    | '/'
+    | '/machines/$id'
+    | '/workers/$id'
+    | '/machines'
+    | '/workers'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/login'
+    | '/_app/alerts'
+    | '/_app/analytics'
+    | '/_app/evidence'
+    | '/_app/incidents'
+    | '/_app/live'
+    | '/_app/reports'
+    | '/_app/'
+    | '/_app/machines/$id'
+    | '/_app/workers/$id'
+    | '/_app/machines/'
+    | '/_app/workers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/live': {
+      id: '/_app/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof AppLiveRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/incidents': {
+      id: '/_app/incidents'
+      path: '/incidents'
+      fullPath: '/incidents'
+      preLoaderRoute: typeof AppIncidentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/evidence': {
+      id: '/_app/evidence'
+      path: '/evidence'
+      fullPath: '/evidence'
+      preLoaderRoute: typeof AppEvidenceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/alerts': {
+      id: '/_app/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AppAlertsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/workers/': {
+      id: '/_app/workers/'
+      path: '/workers'
+      fullPath: '/workers/'
+      preLoaderRoute: typeof AppWorkersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/machines/': {
+      id: '/_app/machines/'
+      path: '/machines'
+      fullPath: '/machines/'
+      preLoaderRoute: typeof AppMachinesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/workers/$id': {
+      id: '/_app/workers/$id'
+      path: '/workers/$id'
+      fullPath: '/workers/$id'
+      preLoaderRoute: typeof AppWorkersIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/machines/$id': {
+      id: '/_app/machines/$id'
+      path: '/machines/$id'
+      fullPath: '/machines/$id'
+      preLoaderRoute: typeof AppMachinesIdRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppAlertsRoute: typeof AppAlertsRoute
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppEvidenceRoute: typeof AppEvidenceRoute
+  AppIncidentsRoute: typeof AppIncidentsRoute
+  AppLiveRoute: typeof AppLiveRoute
+  AppReportsRoute: typeof AppReportsRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppMachinesIdRoute: typeof AppMachinesIdRoute
+  AppWorkersIdRoute: typeof AppWorkersIdRoute
+  AppMachinesIndexRoute: typeof AppMachinesIndexRoute
+  AppWorkersIndexRoute: typeof AppWorkersIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAlertsRoute: AppAlertsRoute,
+  AppAnalyticsRoute: AppAnalyticsRoute,
+  AppEvidenceRoute: AppEvidenceRoute,
+  AppIncidentsRoute: AppIncidentsRoute,
+  AppLiveRoute: AppLiveRoute,
+  AppReportsRoute: AppReportsRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppMachinesIdRoute: AppMachinesIdRoute,
+  AppWorkersIdRoute: AppWorkersIdRoute,
+  AppMachinesIndexRoute: AppMachinesIndexRoute,
+  AppWorkersIndexRoute: AppWorkersIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
