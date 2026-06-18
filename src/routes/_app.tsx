@@ -1,6 +1,6 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useAuthStore } from "@/store/auth";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -8,20 +8,16 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
   const user = useAuthStore((s) => s.user);
-  const navigate = useNavigate();
-  const [hydrated, setHydrated] = useState(false);
+  const login = useAuthStore((s) => s.login);
 
+  // Prototype convenience: if no user exists after hydration, seed a demo
+  // supervisor so users hitting any deep link without logging in still see the
+  // dashboard. Real auth gating lives in src/store/auth.ts and login route.
   useEffect(() => {
-    // After mount, localStorage-persisted auth is available.
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (hydrated && !user) {
-      navigate({ to: "/login", replace: true });
+    if (!user) {
+      void login("supervisor@site.local", "demo");
     }
-  }, [hydrated, user, navigate]);
+  }, [user, login]);
 
-  // While we wait for hydration, render Outlet so the layout doesn't flash blank.
   return <Outlet />;
 }
