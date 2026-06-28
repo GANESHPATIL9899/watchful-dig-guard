@@ -24,7 +24,6 @@ export const ZONE_THRESHOLDS_M = {
 export const ROUTES = {
   login: "/login",
   dashboard: "/",
-  live: "/live",
   evidence: "/evidence",
   workers: "/workers",
   worker: (id: string) => `/workers/${id}`,
@@ -33,5 +32,4 @@ export const ROUTES = {
   analytics: "/analytics",
   machines: "/machines",
   machine: (id: string) => `/machines/${id}`,
-  reports: "/reports",
 };

@@ -6,6 +6,7 @@
 export const env = {
   USE_MOCK: (import.meta.env.VITE_USE_MOCK ?? "true") !== "false",
   BASE_URL: import.meta.env.VITE_API_BASE_URL ?? "/api",
+  LIVE_REFRESH_MS: Number(import.meta.env.VITE_LIVE_REFRESH_MS ?? 3000),
   APP_NAME: "Site Safety Hub",
   APP_TAGLINE: "AI-Powered Excavator Blind-Spot Safety Monitoring",
 };
