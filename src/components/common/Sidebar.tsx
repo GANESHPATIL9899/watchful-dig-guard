@@ -1,28 +1,24 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
-  Radio,
   Image as ImageIcon,
   Users,
   AlertTriangle,
   Bell,
   BarChart3,
   Truck,
-  FileText,
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/", label: "Executive Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/live", label: "Live Monitoring", icon: Radio },
   { to: "/evidence", label: "Evidence Center", icon: ImageIcon },
   { to: "/workers", label: "Workers", icon: Users },
   { to: "/incidents", label: "Incidents", icon: AlertTriangle },
   { to: "/alerts", label: "Alerts", icon: Bell },
   { to: "/machines", label: "Fleet", icon: Truck },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/reports", label: "Reports", icon: FileText },
 ];
 
 export function Sidebar() {
