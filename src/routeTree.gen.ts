@@ -12,8 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
-import { Route as AppReportsRouteImport } from './routes/_app.reports'
-import { Route as AppLiveRouteImport } from './routes/_app.live'
 import { Route as AppIncidentsRouteImport } from './routes/_app.incidents'
 import { Route as AppEvidenceRouteImport } from './routes/_app.evidence'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
@@ -35,16 +33,6 @@ const AppRoute = AppRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReportsRoute = AppReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppLiveRoute = AppLiveRouteImport.update({
-  id: '/live',
-  path: '/live',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIncidentsRoute = AppIncidentsRouteImport.update({
@@ -95,8 +83,6 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AppAnalyticsRoute
   '/evidence': typeof AppEvidenceRoute
   '/incidents': typeof AppIncidentsRoute
-  '/live': typeof AppLiveRoute
-  '/reports': typeof AppReportsRoute
   '/machines/$id': typeof AppMachinesIdRoute
   '/workers/$id': typeof AppWorkersIdRoute
   '/machines/': typeof AppMachinesIndexRoute
@@ -108,8 +94,6 @@ export interface FileRoutesByTo {
   '/analytics': typeof AppAnalyticsRoute
   '/evidence': typeof AppEvidenceRoute
   '/incidents': typeof AppIncidentsRoute
-  '/live': typeof AppLiveRoute
-  '/reports': typeof AppReportsRoute
   '/': typeof AppIndexRoute
   '/machines/$id': typeof AppMachinesIdRoute
   '/workers/$id': typeof AppWorkersIdRoute
@@ -124,8 +108,6 @@ export interface FileRoutesById {
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/evidence': typeof AppEvidenceRoute
   '/_app/incidents': typeof AppIncidentsRoute
-  '/_app/live': typeof AppLiveRoute
-  '/_app/reports': typeof AppReportsRoute
   '/_app/': typeof AppIndexRoute
   '/_app/machines/$id': typeof AppMachinesIdRoute
   '/_app/workers/$id': typeof AppWorkersIdRoute
@@ -141,8 +123,6 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/evidence'
     | '/incidents'
-    | '/live'
-    | '/reports'
     | '/machines/$id'
     | '/workers/$id'
     | '/machines/'
@@ -154,8 +134,6 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/evidence'
     | '/incidents'
-    | '/live'
-    | '/reports'
     | '/'
     | '/machines/$id'
     | '/workers/$id'
@@ -169,8 +147,6 @@ export interface FileRouteTypes {
     | '/_app/analytics'
     | '/_app/evidence'
     | '/_app/incidents'
-    | '/_app/live'
-    | '/_app/reports'
     | '/_app/'
     | '/_app/machines/$id'
     | '/_app/workers/$id'
@@ -204,20 +180,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reports': {
-      id: '/_app/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AppReportsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/live': {
-      id: '/_app/live'
-      path: '/live'
-      fullPath: '/live'
-      preLoaderRoute: typeof AppLiveRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/incidents': {
@@ -284,8 +246,6 @@ interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppEvidenceRoute: typeof AppEvidenceRoute
   AppIncidentsRoute: typeof AppIncidentsRoute
-  AppLiveRoute: typeof AppLiveRoute
-  AppReportsRoute: typeof AppReportsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppMachinesIdRoute: typeof AppMachinesIdRoute
   AppWorkersIdRoute: typeof AppWorkersIdRoute
@@ -298,8 +258,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppEvidenceRoute: AppEvidenceRoute,
   AppIncidentsRoute: AppIncidentsRoute,
-  AppLiveRoute: AppLiveRoute,
-  AppReportsRoute: AppReportsRoute,
   AppIndexRoute: AppIndexRoute,
   AppMachinesIdRoute: AppMachinesIdRoute,
   AppWorkersIdRoute: AppWorkersIdRoute,
@@ -316,3 +274,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
