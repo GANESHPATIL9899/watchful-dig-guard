@@ -13,11 +13,13 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       login: async (email) => {
-        // Mock authentication for prototype phase.
+        // Mock authentication for prototype phase. All logins are treated as
+        // supervisor sessions until the real auth backend is wired in.
         await new Promise((r) => setTimeout(r, 400));
+        const namePart = email.split("@")[0] || "Supervisor";
         const user: AuthUser = {
           id: "USR-001",
-          name: email.split("@")[0].replace(/\b\w/g, (c) => c.toUpperCase()) || "Supervisor",
+          name: namePart.replace(/\b\w/g, (c) => c.toUpperCase()),
           email,
           role: "supervisor",
         };
