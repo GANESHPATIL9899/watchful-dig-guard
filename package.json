@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "api": "tsx src/api-server.ts",
-    "start": "vinxi start",
+    "start": "npx vinxi start --port $PORT --host 0.0.0.0",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
