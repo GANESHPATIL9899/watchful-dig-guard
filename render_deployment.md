@@ -41,12 +41,13 @@ Now we will deploy the TanStack Start React front-end and configure it to connec
    * **Branch**: `main`
 4. **Build & Start Settings**:
    * **Build Command**: `npm install && npm run build`
-   * **Start Command**: `npx vinxi start --port $PORT --host 0.0.0.0` *(Forces Vinxi to bind to the port Render allocates and expose it externally)*
+   * **Start Command**: `npm run start` *(Runs `vinxi start` which automatically reads the PORT and HOST from Render's environment)*
 5. **Environment Variables**:
    Click **Advanced** and add the following variables:
    * `VITE_USE_MOCK` = `false` *(Tells the frontend to query the live API)*
    * `VITE_API_BASE_URL` = `https://watchful-dig-guard-api.onrender.com/api` *(Paste your API Web Service URL here, making sure to append `/api` at the end)*
    * `VITE_LIVE_REFRESH_MS` = `3000` *(Refresh interval in ms)*
+   * `HOST` = `0.0.0.0` *(Forces Vinxi to expose the server to the host network)*
 6. **Deploy**: Click **Create Web Service**.
 
 ---
