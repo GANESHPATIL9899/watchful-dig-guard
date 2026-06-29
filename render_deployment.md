@@ -41,7 +41,7 @@ Now we will deploy the TanStack Start React front-end and configure it to connec
    * **Branch**: `main`
 4. **Build & Start Settings**:
    * **Build Command**: `npm install && npm run build`
-   * **Start Command**: `npx vinxi start` *(Vinxi launches the production server automatically using the built assets)*
+   * **Start Command**: `npx vinxi start --port $PORT --host 0.0.0.0` *(Forces Vinxi to bind to the port Render allocates and expose it externally)*
 5. **Environment Variables**:
    Click **Advanced** and add the following variables:
    * `VITE_USE_MOCK` = `false` *(Tells the frontend to query the live API)*
