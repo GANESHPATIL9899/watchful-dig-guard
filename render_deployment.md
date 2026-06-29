@@ -1,8 +1,8 @@
 # Watchful Dig Guard — Render Deployment Guide
 
-This guide walks you through deploying your full-stack safety dashboard and the simulation API server to **Render** (https://render.com/).
+This guide walks you through deploying your full-stack safety dashboard and the simulation API server to **Render** (https://render.com/) using the native **Node.js** environment.
 
-Since the project consists of two components (the **Vite / TanStack Start Frontend** and the **Bun-powered API Server**), we will deploy them as two separate **Web Services** on Render so they can communicate over HTTPS.
+Since the project consists of two components (the **Vite / TanStack Start Frontend** and the **TypeScript API Server**), we will deploy them as two separate **Web Services** on Render.
 
 ---
 
@@ -14,15 +14,15 @@ First, we will deploy the mock telemetry API server so that we have its live URL
 2. **Connect your GitHub repository**: Select `watchful-dig-guard`.
 3. **Configure the Web Service**:
    * **Name**: `watchful-dig-guard-api`
-   * **Language**: `Bun` (Render supports Bun natively. If not shown, select `Node` and we can specify the Bun version).
+   * **Language**: `Node` *(Choose standard Node runtime)*
    * **Branch**: `main`
    * **Region**: Choose the region closest to you (e.g., `Singapore` or `Oregon`).
 4. **Build & Start Settings**:
-   * **Build Command**: `bun install`
-   * **Start Command**: `bun run src/api-server.ts`
+   * **Build Command**: `npm install`
+   * **Start Command**: `npm run api` *(Uses `tsx` to execute TypeScript on Node natively)*
 5. **Environment Variables**:
    Click **Advanced** and add the following variable:
-   * `API_PORT` = `10000` *(Render maps your app to port 10000 by default)*
+   * `PORT` = `10000` *(Render maps your app to port 10000 by default)*
 6. **Deploy**: Click **Create Web Service**. 
    * Once deployed, Render will provide a public URL (e.g., `https://watchful-dig-guard-api.onrender.com`).
    * **Copy this URL**; you will need it for the frontend.
@@ -40,7 +40,7 @@ Now we will deploy the TanStack Start React front-end and configure it to connec
    * **Language**: `Node`
    * **Branch**: `main`
 4. **Build & Start Settings**:
-   * **Build Command**: `bun install && bun run build`
+   * **Build Command**: `npm install && npm run build`
    * **Start Command**: `node .output/server/index.mjs` *(TanStack Start compiles the production server output here)*
 5. **Environment Variables**:
    Click **Advanced** and add the following variables:
