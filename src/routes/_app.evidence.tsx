@@ -20,6 +20,68 @@ export const Route = createFileRoute("/_app/evidence")({
   component: EvidencePage,
 });
 
+// Component to render a real construction site photo with AI bounding box & camera overlay HUD
+function EvidenceCardImage({ 
+  imageUrl, 
+  distanceM, 
+  zone 
+}: { 
+  imageUrl: string; 
+  distanceM: number; 
+  zone: string;
+}) {
+  const borderCol = 
+    zone === "emergency" ? "border-red-500" : 
+    zone === "critical" ? "border-orange-500" : 
+    zone === "warning" ? "border-yellow-500" : 
+    "border-emerald-500";
+
+  const bgCol = 
+    zone === "emergency" ? "bg-red-600" : 
+    zone === "critical" ? "bg-orange-600" : 
+    zone === "warning" ? "bg-yellow-600" : 
+    "bg-emerald-600";
+
+  const textCol = 
+    zone === "emergency" ? "text-red-400" : 
+    zone === "critical" ? "text-orange-400" : 
+    zone === "warning" ? "text-yellow-400" : 
+    "text-emerald-400";
+
+  return (
+    <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
+      {/* Real-time photo backplate */}
+      <img 
+        src={imageUrl} 
+        alt="Camera Feed Snapshot" 
+        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        referrerPolicy="no-referrer"
+      />
+
+      {/* Screen HUD Border Overlay */}
+      <div className={`absolute inset-0 border-2 ${borderCol} pointer-events-none opacity-60`} />
+
+      {/* Top Left Feed Label HUD */}
+      <div className="absolute left-3 top-3 flex items-center gap-1 rounded bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold text-emerald-400 tracking-wider">
+        REAR CAM • IR
+      </div>
+
+      {/* Top Right Status Badge HUD */}
+      <div className={`absolute right-3 top-3 rounded bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold ${textCol} tracking-wider`}>
+        {zone.toUpperCase()}
+      </div>
+
+      {/* AI detection bounding box over construction worker */}
+      <div className={`absolute left-[35%] top-[25%] w-[30%] h-[60%] border-2 border-dashed ${borderCol} rounded-md pointer-events-none shadow-[0_0_12px_rgba(0,0,0,0.6)]`}>
+        {/* Real-time distance telemetry badge */}
+        <div className={`absolute -top-6 left-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md ${bgCol}`}>
+          DIST {distanceM.toFixed(1)}m
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EvidencePage() {
   const { data = [] } = useEvidence();
   const [q, setQ] = useState("");
@@ -48,7 +110,7 @@ function EvidencePage() {
               onClick={() => setSelected(e)}
               className="group overflow-hidden rounded-lg border border-border bg-card text-left transition-shadow hover:shadow-md"
             >
-              <img src={e.imageUrl} alt="" className="aspect-video w-full object-cover" />
+              <EvidenceCardImage imageUrl={e.imageUrl} distanceM={e.distanceM} zone={zone} />
               <div className="space-y-2 p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs text-muted-foreground">{e.id}</span>
@@ -73,7 +135,13 @@ function EvidencePage() {
               <DialogHeader>
                 <DialogTitle className="font-mono">{selected.id} · {selected.alertType}</DialogTitle>
               </DialogHeader>
-              <img src={selected.imageUrl} alt="" className="w-full rounded-md border border-border" />
+              <div className="rounded-xl overflow-hidden border border-slate-200">
+                <EvidenceCardImage 
+                  imageUrl={selected.imageUrl} 
+                  distanceM={selected.distanceM} 
+                  zone={classifyZone(selected.distanceM)} 
+                />
+              </div>
               <dl className="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
                 <Field k="Captured" v={formatDateTime(selected.capturedAt)} />
                 <Field k="Worker" v={<span className="font-mono">{selected.workerId}</span>} />

@@ -3,16 +3,12 @@ import { useState } from "react";
 import { 
   ShieldCheck, 
   Loader2, 
-  Camera, 
-  AlertTriangle, 
   Lock, 
   User, 
   Eye, 
   EyeOff, 
   ArrowRight, 
-  Video, 
-  BarChart3, 
-  Shield 
+  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,25 +109,61 @@ const SiteSafetyLogo = ({ className = "w-20 h-20" }: { className?: string }) => 
 function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
+  const signup = useAuthStore((s) => s.signup);
+  
   const [email, setEmail] = useState("supervisor@site.local");
   const [password, setPassword] = useState("demo1234");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Email format validation helper
+  const isValidEmail = (val: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  };
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+
+    if (!isValidEmail(email)) {
+      toast.error("Please enter a valid email address");
+      setLoading(false);
+      return;
+    }
+
     try {
-      await login(email, password);
-      toast.success("Signed in successfully");
-      navigate({ to: "/" });
-    } catch {
-      toast.error("Sign in failed");
+      if (isSignUp) {
+        if (password !== confirmPassword) {
+          toast.error("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+        await signup(email, password);
+        toast.success("Account registered successfully! Please sign in.");
+        setIsSignUp(false);
+        setPassword("");
+        setConfirmPassword("");
+      } else {
+        await login(email, password);
+        toast.success("Signed in successfully");
+        navigate({ to: "/" });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Authentication failed");
     } finally {
       setLoading(false);
     }
   }
+
+  const toggleAuthMode = () => {
+    setIsSignUp(!isSignUp);
+    setPassword("");
+    setConfirmPassword("");
+  };
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-12 overflow-hidden bg-slate-900 font-sans">
@@ -176,7 +208,7 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* Right Column - Login Card */}
+        {/* Right Column - Login / Register Card */}
         <div className="lg:col-span-5 flex justify-center lg:justify-end w-full">
           <div className="w-full max-w-[460px] bg-white rounded-3xl shadow-2xl p-8 md:p-10 border border-slate-100 flex flex-col items-center">
             
@@ -184,27 +216,27 @@ function LoginPage() {
             <SiteSafetyLogo className="w-18 h-18 mb-4" />
             
             <h2 className="text-2xl md:text-3xl font-extrabold text-[#0f172a] text-center tracking-tight">
-              Welcome Back!
+              {isSignUp ? "Create Account" : "Welcome Back!"}
             </h2>
             <p className="text-sm font-medium text-slate-500 text-center mt-1.5 mb-8">
-              Please login to continue to your dashboard
+              {isSignUp ? "Register your safety officer profile" : "Please login to continue to your dashboard"}
             </p>
 
             <form onSubmit={onSubmit} className="w-full space-y-5">
-              {/* Login Field */}
+              {/* Email Address Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-bold text-slate-700">
-                  Login
+                  Email Address
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <Input
                     id="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your username"
+                    placeholder="Enter your email address"
                     className="w-full pl-11 pr-4 py-3 h-12 bg-[#f8fafc] border-slate-200 rounded-xl focus-visible:ring-[#f97316]/20 focus-visible:border-[#f97316] font-medium text-slate-800 placeholder:text-slate-400 transition-colors"
                   />
                 </div>
@@ -223,7 +255,7 @@ function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder={isSignUp ? "Create a password" : "Enter your password"}
                     className="w-full pl-11 pr-11 py-3 h-12 bg-[#f8fafc] border-slate-200 rounded-xl focus-visible:ring-[#f97316]/20 focus-visible:border-[#f97316] font-medium text-slate-800 placeholder:text-slate-400 transition-colors"
                   />
                   <button
@@ -236,31 +268,54 @@ function LoginPage() {
                 </div>
               </div>
 
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between text-sm pt-1">
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox"
-                    id="remember" 
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded border-slate-300 text-[#f97316] focus:ring-[#f97316] focus:ring-offset-0 focus:outline-none w-4 h-4 cursor-pointer accent-[#f97316]"
-                  />
-                  <label 
-                    htmlFor="remember" 
-                    className="text-sm font-semibold text-slate-600 cursor-pointer select-none"
-                  >
-                    Remember me
-                  </label>
+              {/* Confirm Password Field (Only during signup) */}
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-bold text-slate-700">
+                    Confirm Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <Input
+                      id="confirmPassword"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      className="w-full pl-11 pr-11 py-3 h-12 bg-[#f8fafc] border-slate-200 rounded-xl focus-visible:ring-[#f97316]/20 focus-visible:border-[#f97316] font-medium text-slate-800 placeholder:text-slate-400 transition-colors"
+                    />
+                  </div>
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => toast.info("Password reset link sent to registered email")}
-                  className="text-sm font-bold text-[#f97316] hover:text-[#ea580c] hover:underline transition-colors"
-                >
-                  Forgot Password?
-                </button>
-              </div>
+              )}
+
+              {/* Remember Me & Forgot Password (Only during Login) */}
+              {!isSignUp && (
+                <div className="flex items-center justify-between text-sm pt-1">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox"
+                      id="remember" 
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="rounded border-slate-300 text-[#f97316] focus:ring-[#f97316] focus:ring-offset-0 focus:outline-none w-4 h-4 cursor-pointer accent-[#f97316]"
+                    />
+                    <label 
+                      htmlFor="remember" 
+                      className="text-sm font-semibold text-slate-600 cursor-pointer select-none"
+                    >
+                      Remember me
+                    </label>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => toast.info("Password reset link sent to registered email")}
+                    className="text-sm font-bold text-[#f97316] hover:text-[#ea580c] hover:underline transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
 
               {/* Submit Button */}
               <Button 
@@ -272,10 +327,24 @@ function LoginPage() {
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <>
-                    Login <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+                    {isSignUp ? "Sign Up" : "Login"} <ArrowRight className="w-5 h-5 stroke-[2.5]" />
                   </>
                 )}
               </Button>
+
+              {/* Navigation Link to switch form modes */}
+              <div className="text-center text-sm pt-2">
+                <span className="text-slate-500">
+                  {isSignUp ? "Already have an account? " : "Don't have an account? "}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleAuthMode}
+                  className="font-bold text-[#f97316] hover:text-[#ea580c] hover:underline focus:outline-none transition-colors"
+                >
+                  {isSignUp ? "Sign In" : "Sign Up"}
+                </button>
+              </div>
 
               {/* Divider */}
               <div className="relative flex py-2 items-center">
