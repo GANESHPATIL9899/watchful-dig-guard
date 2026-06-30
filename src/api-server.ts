@@ -58,7 +58,8 @@ function pushTelemetry(
   distanceM: number,
   timestamp?: string,
   workerId?: string,
-  workerName?: string
+  workerName?: string,
+  imageUrl?: string
 ): void {
   const machine = machines.find((m) => m.id === machineId) ?? machines[0];
   const worker = workerId 
@@ -86,7 +87,7 @@ function pushTelemetry(
     riskLevel,
     severity,
     alertType: riskLevel === "safe" ? "Worker Detected" : "Blind Spot Breach",
-    imageUrl: incidents[0]?.imageUrl ?? "",
+    imageUrl: imageUrl || (incidents.length > 0 ? incidents[Math.floor(Math.random() * incidents.length)].imageUrl : ""),
     actionTaken: emergencyStop ? "Emergency stop engaged - hydraulic lock" : "Audio + visual alert issued",
     emergencyStop,
     resolutionStatus: emergencyStop ? "open" : "investigating",
@@ -107,7 +108,7 @@ function pushTelemetry(
     createdAt: now,
   };
 
-  incidents = [incident, ...incidents].slice(0, 80);
+  incidents = [incident, ...incidents].slice(0, 24);
   alerts = [alert, ...alerts].slice(0, 40);
   workersDetectedToday += 1;
 
@@ -125,11 +126,12 @@ function pushTelemetry(
   }
 }
 
-setInterval(() => {
-  const machine = machines[Math.floor(Math.random() * machines.length)];
-  const distanceM = Number((0.4 + Math.random() * 7.5).toFixed(2));
-  pushTelemetry(machine.id, distanceM);
-}, REFRESH_MS);
+// Telemetry simulation interval disabled to prevent duplicate/repeated incidents
+// setInterval(() => {
+//   const machine = machines[Math.floor(Math.random() * machines.length)];
+//   const distanceM = Number((0.4 + Math.random() * 7.5).toFixed(2));
+//   pushTelemetry(machine.id, distanceM);
+// }, REFRESH_MS);
 
 // Create a standard Node.js HTTP server to ensure 100% compatibility on Render without Bun
 const server = http.createServer((req, res) => {
@@ -199,8 +201,9 @@ const server = http.createServer((req, res) => {
             const timestamp = columns[2] ? columns[2].trim() : new Date().toISOString();
             const workerName = columns[3] ? columns[3].trim() : undefined;
             const workerId = columns[4] ? columns[4].trim() : undefined;
+            const imageUrl = columns[5] ? columns[5].trim() : undefined;
 
-            pushTelemetry(machineId, distanceM, timestamp, workerId, workerName);
+            pushTelemetry(machineId, distanceM, timestamp, workerId, workerName, imageUrl);
             parsedCount++;
           }
         }

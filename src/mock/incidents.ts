@@ -16,17 +16,33 @@ const RESOLUTIONS: Incident["resolutionStatus"][] = ["open", "investigating", "r
 
 // High-quality, real-time safety images representing actual workers and machinery on site
 const REAL_IMAGES = [
-  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=600", // worker in yellow helmet
-  "https://images.unsplash.com/photo-1589790263957-c4125f1448b5?auto=format&fit=crop&q=80&w=600", // worker in safety vest walking
-  "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&q=80&w=600", // construction worker
-  "https://images.unsplash.com/photo-1508962914676-134849a727f0?auto=format&fit=crop&q=80&w=600", // worker in safety gear
-  "https://images.unsplash.com/photo-1579684389782-64d84b5e901a?auto=format&fit=crop&q=80&w=600", // heavy machinery site
-  "https://images.unsplash.com/photo-1578319439584-104c94d37305?auto=format&fit=crop&q=80&w=600", // excavator close up
-  "https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?auto=format&fit=crop&q=80&w=600", // site with equipment
-  "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=600"  // busy site work
+  "/images/extracted_image_1.png",
+  "/images/extracted_image_2.png",
+  "/images/extracted_image_3.png",
+  "/images/extracted_image_4.png",
+  "/images/extracted_image_5.png",
+  "/images/extracted_image_6.png",
+  "/images/extracted_image_7.png",
+  "/images/extracted_image_8.png",
+  "/images/extracted_image_9.png",
+  "/images/extracted_image_10.png",
+  "/images/extracted_image_11.png",
+  "/images/extracted_image_12.png",
+  "/images/extracted_image_13.png",
+  "/images/extracted_image_14.png",
+  "/images/extracted_image_15.png",
+  "/images/extracted_image_16.png",
+  "/images/extracted_image_17.png",
+  "/images/extracted_image_18.png",
+  "/images/extracted_image_19.png",
+  "/images/extracted_image_20.png",
+  "/images/extracted_image_21.png",
+  "/images/extracted_image_22.png",
+  "/images/extracted_image_23.png",
+  "/images/extracted_image_24.png"
 ];
 
-export const incidents: Incident[] = Array.from({ length: 64 }, (_, i) => {
+export const incidents: Incident[] = Array.from({ length: REAL_IMAGES.length }, (_, i) => {
   const w = workers[i % workers.length];
   const m = machines[i % machines.length];
   const distanceM = Math.max(0.4, +(Math.abs(Math.sin(i * 1.7)) * 10).toFixed(2));
