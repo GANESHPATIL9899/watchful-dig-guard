@@ -1,3 +1,6 @@
+import mqtt from "mqtt";
+import fs from "fs";
+import path from "path";
 import http from "http";
 import { URL } from "url";
 import { alerts as seedAlerts } from "./mock/alerts";
@@ -133,6 +136,80 @@ function pushTelemetry(
 //   pushTelemetry(machine.id, distanceM);
 // }, REFRESH_MS);
 
+function startAwsIotClient() {
+  const endpoint = process.env.AWS_IOT_ENDPOINT;
+  const topic = process.env.AWS_IOT_TOPIC ?? "machine/05/#";
+
+  if (!endpoint) {
+    console.warn("⚠️ AWS_IOT_ENDPOINT not set, running in local HTTP simulation mode only.");
+    return;
+  }
+
+  console.log("Connecting to AWS IoT Core MQTT broker...");
+  try {
+    const certsPath = path.join(process.cwd(), "certs");
+    const options = {
+      key: fs.readFileSync(path.join(certsPath, "private.pem.key")),
+      cert: fs.readFileSync(path.join(certsPath, "certificate.pem.crt")),
+      ca: fs.readFileSync(path.join(certsPath, "AmazonRootCA1.pem")),
+      clientId: "watchful-dig-guard-backend-" + Math.random().toString(16).substring(2, 8),
+      rejectUnauthorized: true,
+    };
+
+    const client = mqtt.connect(`mqtts://${endpoint}:8883`, options);
+
+    // Buffer state to merge the 3 decoupled topics
+    let latestLidarDistance = 8.0; 
+    let latestCameraImage = "";
+    let latestHumanDetected = false;
+
+    client.on("connect", () => {
+      console.log("✅ Connected to AWS IoT Core MQTT Broker!");
+      client.subscribe(topic, (err) => {
+        if (err) {
+          console.error("❌ Subscription error on topic:", topic, err);
+        } else {
+          console.log("📡 Subscribed to AWS IoT topic:", topic);
+        }
+      });
+    });
+
+    client.on("message", (topicName, message) => {
+      try {
+        const payload = JSON.parse(message.toString());
+        console.log(`📥 Received MQTT [${topicName}]:`, payload);
+
+        if (topicName.endsWith("/lidar")) {
+          latestLidarDistance = Number(payload.distance_m ?? 8.0);
+        } else if (topicName.endsWith("/camera")) {
+          latestHumanDetected = !!payload.human_detected;
+          latestCameraImage = payload.image_base64_preview ?? "";
+        } else if (topicName.endsWith("/canbus")) {
+          const machineId = payload.machine_id ?? "EXC-005";
+          
+          // Push to dashboard when Canbus completes the message cycle
+          pushTelemetry(
+            machineId,
+            latestHumanDetected ? latestLidarDistance : 8.0, 
+            payload.timestamp,
+            undefined, 
+            undefined, 
+            latestCameraImage
+          );
+        }
+      } catch (err) {
+        console.error("⚠️ Failed to parse message payload JSON:", message.toString(), err);
+      }
+    });
+
+    client.on("error", (err) => {
+      console.error("❌ AWS IoT client connection error:", err);
+    });
+  } catch (err: any) {
+    console.error("❌ Failed to initialize AWS IoT client:", err.message);
+  }
+}
+
 // Create a standard Node.js HTTP server to ensure 100% compatibility on Render without Bun
 const server = http.createServer((req, res) => {
   const url = new URL(req.url ?? "", `http://${req.headers.host || "localhost"}`);
@@ -252,6 +329,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
+  startAwsIotClient();
   console.log(`Demo IoT API running at http://127.0.0.1:${PORT}/api`);
   console.log(`Generating dummy telemetry every ${REFRESH_MS}ms`);
 });
