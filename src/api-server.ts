@@ -135,7 +135,6 @@ function pushTelemetry(
 //   const distanceM = Number((0.4 + Math.random() * 7.5).toFixed(2));
 //   pushTelemetry(machine.id, distanceM);
 // }, REFRESH_MS);
-
 function startAwsIotClient() {
   const endpoint = process.env.AWS_IOT_ENDPOINT;
   const topic = process.env.AWS_IOT_TOPIC ?? "machine/05/#";
@@ -209,7 +208,6 @@ function startAwsIotClient() {
     console.error("❌ Failed to initialize AWS IoT client:", err.message);
   }
 }
-
 // Create a standard Node.js HTTP server to ensure 100% compatibility on Render without Bun
 const server = http.createServer((req, res) => {
   const url = new URL(req.url ?? "", `http://${req.headers.host || "localhost"}`);
@@ -319,6 +317,7 @@ const server = http.createServer((req, res) => {
       notes: inc.supervisorRemarks,
     }));
     return sendJson(updatedEvidence);
+  
   }
   
   if (path.startsWith("/api/evidence/")) return sendJson(evidence.find((e) => e.id === path.split("/").pop()));
