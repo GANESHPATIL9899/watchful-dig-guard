@@ -1,7 +1,28 @@
 import "./lib/error-capture";
+import fs from "node:fs";
+import path from "node:path";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+
+const MIME_TYPES: Record<string, string> = {
+  ".js": "application/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".gif": "image/gif",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".json": "application/json; charset=utf-8",
+};
+
+function getMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  return MIME_TYPES[ext] || "application/octet-stream";
+}
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -40,6 +61,29 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      const pathname = url.pathname;
+
+      if (pathname.startsWith("/assets/") || pathname.startsWith("/images/")) {
+        const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, "");
+        const filePath = path.join(process.cwd(), "dist", "client", safePath);
+
+        try {
+          if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+            const content = fs.readFileSync(filePath);
+            return new Response(content, {
+              status: 200,
+              headers: {
+                "Content-Type": getMimeType(filePath),
+                "Cache-Control": "public, max-age=31536000, immutable",
+              },
+            });
+          }
+        } catch (err) {
+          console.error("Error serving static file:", err);
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
