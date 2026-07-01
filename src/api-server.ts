@@ -147,15 +147,30 @@ function startAwsIotClient() {
   console.log("Connecting to AWS IoT Core MQTT broker...");
   try {
     const certsPath = path.join(process.cwd(), "certs");
+    
+    // Support loading certificate contents directly from environment variables (highly recommended for Render/Cloud hosts)
+    const keyContent = process.env.AWS_PRIVATE_KEY 
+      ? process.env.AWS_PRIVATE_KEY.replace(/\\n/g, "\n") 
+      : fs.readFileSync(path.join(certsPath, "private.pem.key"));
+
+    const certContent = process.env.AWS_CERTIFICATE 
+      ? process.env.AWS_CERTIFICATE.replace(/\\n/g, "\n") 
+      : fs.readFileSync(path.join(certsPath, "certificate.pem.crt"));
+
+    const caContent = process.env.AWS_ROOT_CA 
+      ? process.env.AWS_ROOT_CA.replace(/\\n/g, "\n") 
+      : fs.readFileSync(path.join(certsPath, "AmazonRootCA1.pem"));
+
     const options = {
-      key: fs.readFileSync(path.join(certsPath, "private.pem.key")),
-      cert: fs.readFileSync(path.join(certsPath, "certificate.pem.crt")),
-      ca: fs.readFileSync(path.join(certsPath, "AmazonRootCA1.pem")),
+      key: keyContent,
+      cert: certContent,
+      ca: caContent,
       clientId: "watchful-dig-guard-backend-" + Math.random().toString(16).substring(2, 8),
       rejectUnauthorized: true,
+      ALPNProtocols: ["x-amzn-mqtt-ca"],
     };
 
-    const client = mqtt.connect(`mqtts://${endpoint}:8883`, options);
+    const client = mqtt.connect(`mqtts://${endpoint}:443`, options);
 
     // Buffer state to merge the 3 decoupled topics
     let latestLidarDistance = 8.0; 
