@@ -3,9 +3,7 @@ import { useState, useEffect } from "react";
 import { AppShell } from "@/components/common/AppShell";
 import { KpiCard } from "@/components/common/KpiCard";
 import { useDashboardKpis, useMachines, useAlerts, useIncidents } from "@/hooks/data";
-import { SiteHeatMap } from "@/components/dashboard/SiteHeatMap";
 import { TrendChart } from "@/components/dashboard/TrendChart";
-import { RecentCriticalEvents } from "@/components/dashboard/RecentCriticalEvents";
 import { Truck, Users, Bell, OctagonX, AlertTriangle, ShieldCheck, Camera, Activity, Cpu, Wifi, Eye, Play, Pause, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -173,38 +171,33 @@ function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-3">
-        <div className={isFiltered && node?.latestCameraImage ? "xl:col-span-2" : "xl:col-span-2"}>
-          <SiteHeatMap selectedNode={selectedMachineId || "all"} />
-        </div>
-        
+      <div className="mt-6">
         {isFiltered && node?.latestCameraImage ? (
-          <div className="rounded-lg border border-border bg-card overflow-hidden flex flex-col justify-between">
-            <div className="border-b border-border px-4 py-3 bg-muted/20">
-              <p className="text-sm font-semibold flex items-center gap-2">
-                <Camera className="h-4 w-4 text-critical animate-pulse" /> Live AI Camera Feed
-              </p>
-              <p className="text-xs text-muted-foreground">{selectedMachineId} · {node.name}</p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card overflow-hidden flex flex-col justify-between">
+              <div className="border-b border-border px-4 py-3 bg-muted/20">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-critical animate-pulse" /> Live AI Camera Feed
+                </p>
+                <p className="text-xs text-muted-foreground">{selectedMachineId} · {node.name}</p>
+              </div>
+              <div className="flex-1 flex items-center justify-center p-4 bg-black/95">
+                <img 
+                  src={node.latestCameraImage.startsWith("data:") ? node.latestCameraImage : `data:image/jpeg;base64,${node.latestCameraImage}`} 
+                  alt="AI Detection Snapshot" 
+                  className="max-h-[320px] object-contain rounded-sm border border-muted-foreground/20 shadow-lg"
+                />
+              </div>
+              <div className="px-4 py-2 bg-muted/40 border-t border-border flex items-center justify-between text-xs">
+                <span className="font-semibold text-critical">⚠️ AI Detection Active</span>
+                <span className="text-muted-foreground">Proximity: {node.latestLidarDistance.toFixed(1)}m</span>
+              </div>
             </div>
-            <div className="flex-1 flex items-center justify-center p-4 bg-black/95">
-              <img 
-                src={node.latestCameraImage.startsWith("data:") ? node.latestCameraImage : `data:image/jpeg;base64,${node.latestCameraImage}`} 
-                alt="AI Detection Snapshot" 
-                className="max-h-[240px] object-contain rounded-sm border border-muted-foreground/20 shadow-lg"
-              />
-            </div>
-            <div className="px-4 py-2 bg-muted/40 border-t border-border flex items-center justify-between text-xs">
-              <span className="font-semibold text-critical">⚠️ AI Detection Active</span>
-              <span className="text-muted-foreground">Proximity: {node.latestLidarDistance.toFixed(1)}m</span>
-            </div>
+            <TrendChart />
           </div>
         ) : (
           <TrendChart />
         )}
-      </div>
-
-      <div className="mt-6">
-        <RecentCriticalEvents selectedNode={selectedMachineId || "all"} />
       </div>
     </AppShell>
   );
