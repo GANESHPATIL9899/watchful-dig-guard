@@ -172,24 +172,6 @@ function startAwsIotClient() {
 
     const client = mqtt.connect(`mqtts://${endpoint}:443`, options);
 
-    // Buffers dictionary keyed by machineId
-    const machineBuffers: Record<string, {
-      latestLidarDistance: number;
-      latestCameraImage: string;
-      latestHumanDetected: boolean;
-    }> = {};
-
-    function getOrCreateBuffer(machineId: string) {
-      if (!machineBuffers[machineId]) {
-        machineBuffers[machineId] = {
-          latestLidarDistance: 8.0,
-          latestCameraImage: "",
-          latestHumanDetected: false,
-        };
-      }
-      return machineBuffers[machineId];
-    }
-
     client.on("connect", () => {
       console.log("✅ Connected to AWS IoT Core MQTT Broker!");
       client.subscribe(topic, (err) => {
@@ -206,13 +188,26 @@ function startAwsIotClient() {
         const payload = JSON.parse(message.toString());
         console.log(`📥 Received MQTT [${topicName}]:`, payload);
 
-        // Topic format: machine/<machineId>/<nodeType>
+        // Topic format: 
+        // 1. machine/<machineId>/node/<nodeId>/<sensorType>
+        // 2. machine/<machineId>/<nodeId>/<sensorType>
+        // 3. machine/<machineId>/<sensorType> (fallback)
         const parts = topicName.split("/");
         if (parts.length < 3) return;
 
-        const machineId = parts[1];
-        const nodeType = parts[2];
-        const buffer = getOrCreateBuffer(machineId);
+        let machineId = parts[1];
+        let nodeId = "node-1";
+        let sensorType = "";
+
+        if (parts.length >= 5 && parts[2] === "node") {
+          nodeId = parts[3];
+          sensorType = parts[4];
+        } else if (parts.length >= 4) {
+          nodeId = parts[2];
+          sensorType = parts[3];
+        } else {
+          sensorType = parts[2];
+        }
 
         // Dynamically register the machine in the global machines array if not present
         let machine = machines.find((m) => m.id === machineId);
@@ -232,39 +227,63 @@ function startAwsIotClient() {
             lidarStatus: "online",
             canBusStatus: "online",
             lastIncidentAt: new Date().toISOString(),
+            nodes: []
           };
           machines.push(machine);
         }
 
-        if (nodeType === "lidar") {
-          buffer.latestLidarDistance = Number(payload.distance_m ?? 8.0);
-        } else if (nodeType === "camera") {
-          buffer.latestHumanDetected = !!payload.human_detected;
-          buffer.latestCameraImage = payload.image_base64_preview ?? "";
-        } else if (nodeType === "canbus") {
+        if (!machine.nodes) {
+          machine.nodes = [];
+        }
+
+        // Find or create the specific node
+        let node = machine.nodes.find((n) => n.id === nodeId);
+        if (!node) {
+          node = {
+            id: nodeId,
+            name: `Sensor Node ${nodeId.toUpperCase()}`,
+            cameraStatus: "online",
+            lidarStatus: "online",
+            latestLidarDistance: 8.0,
+            latestCameraImage: "",
+            latestHumanDetected: false
+          };
+          machine.nodes.push(node);
+        }
+
+        if (sensorType === "lidar") {
+          node.latestLidarDistance = Number(payload.distance_m ?? 8.0);
+          node.lidarStatus = payload.status ?? "online";
+        } else if (sensorType === "camera") {
+          node.latestHumanDetected = !!payload.human_detected;
+          node.latestCameraImage = payload.image_base64_preview ?? "";
+          node.cameraStatus = payload.status ?? "online";
+        } else if (sensorType === "canbus") {
           machine.speedKph = Math.round(Number(payload.machine_speed_kmh ?? 0));
           machine.status = payload.machine_state ?? "active";
-          
-          // Push to dashboard when Canbus completes the message cycle
-          pushTelemetry(
-            machineId,
-            buffer.latestHumanDetected ? buffer.latestLidarDistance : 8.0, 
-            payload.timestamp,
-            undefined, 
-            undefined, 
-            buffer.latestCameraImage
-          );
-        } else if (nodeType === "gps") {
+        } else if (sensorType === "gps") {
           const lat = Number(payload.lat ?? payload.latitude);
           const lng = Number(payload.lng ?? payload.longitude);
           if (!isNaN(lat) && !isNaN(lng)) {
             machine.gps = { lat, lng };
           }
-        } else if (nodeType === "health") {
+        } else if (sensorType === "health") {
           const score = Number(payload.health_score ?? payload.score);
           if (!isNaN(score)) {
             machine.healthScore = score;
           }
+        }
+
+        if (sensorType === "lidar" || sensorType === "camera") {
+          // Push telemetry when either sensor updates
+          pushTelemetry(
+            machineId,
+            node.latestHumanDetected ? node.latestLidarDistance : 8.0, 
+            payload.timestamp || new Date().toISOString(),
+            undefined, 
+            undefined, 
+            node.latestCameraImage
+          );
         }
       } catch (err) {
         console.error("⚠️ Failed to parse message payload JSON:", message.toString(), err);

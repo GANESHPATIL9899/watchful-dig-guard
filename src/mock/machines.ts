@@ -8,6 +8,24 @@ export const machines: Machine[] = Array.from({ length: 12 }, (_, i) => {
   const id = `EX-${String(2001 + i)}`;
   const healthScore = 70 + ((i * 13) % 30);
   const status = i % 11 === 0 ? "maintenance" : i % 7 === 0 ? "idle" : "active";
+
+  let nodes: any[] | undefined = undefined;
+  if (id === "EX-2001") {
+    nodes = [
+      { id: "node-1", name: "Node 1 (Front Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
+      { id: "node-2", name: "Node 2 (Rear Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
+    ];
+  } else if (id === "EX-2002") {
+    nodes = [
+      { id: "node-3", name: "Node 3 (Front Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
+      { id: "node-4", name: "Node 4 (Rear Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
+    ];
+  } else if (id === "EX-2003") {
+    nodes = [
+      { id: "node-5", name: "Node 5 (Primary Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
+    ];
+  }
+
   return {
     id,
     type: TYPES[i % TYPES.length],
@@ -23,5 +41,6 @@ export const machines: Machine[] = Array.from({ length: 12 }, (_, i) => {
     lidarStatus: i % 9 === 0 ? "degraded" : "online",
     canBusStatus: i % 12 === 0 ? "offline" : "online",
     lastIncidentAt: new Date(Date.now() - (i + 1) * 3600 * 1000 * (i % 5 + 1)).toISOString(),
+    nodes,
   };
 });

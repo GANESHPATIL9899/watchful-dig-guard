@@ -20,6 +20,16 @@ export interface Worker {
   certifications: string[];
 }
 
+export interface SensorNode {
+  id: string;
+  name: string;
+  cameraStatus: SensorStatus;
+  lidarStatus: SensorStatus;
+  latestLidarDistance: number;
+  latestCameraImage: string;
+  latestHumanDetected: boolean;
+}
+
 export interface Machine {
   id: string;
   type: string;
@@ -35,6 +45,7 @@ export interface Machine {
   lidarStatus: SensorStatus;
   canBusStatus: SensorStatus;
   lastIncidentAt?: string;
+  nodes?: SensorNode[];
 }
 
 export interface Incident {
