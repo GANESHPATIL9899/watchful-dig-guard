@@ -5,7 +5,7 @@ export const evidence: EvidenceImage[] = incidents.map((inc, i) => {
   const id = `EVD-${String(9001 + i)}`;
   return {
     id,
-    imageUrl: (id === "EVD-9002" || id === "EVD-9004") ? "" : inc.imageUrl,
+    imageUrl: inc.imageUrl,
     capturedAt: inc.timestamp,
     workerId: inc.workerId,
     machineId: inc.machineId,
@@ -15,4 +15,4 @@ export const evidence: EvidenceImage[] = incidents.map((inc, i) => {
     emergencyStop: inc.emergencyStop,
     notes: inc.supervisorRemarks,
   };
-});
+}).filter(e => e.id !== "EVD-9002" && e.id !== "EVD-9004");

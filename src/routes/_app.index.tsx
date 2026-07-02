@@ -10,6 +10,11 @@ import { Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_app/")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      node: (search.node as string) || undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Executive Dashboard — Site Safety Hub" },
@@ -20,13 +25,21 @@ export const Route = createFileRoute("/_app/")({
 });
 
 function DashboardPage() {
-  const [selectedNode, setSelectedNode] = useState<string>("all");
+  const { node: initialNode } = Route.useSearch();
+  const [selectedNode, setSelectedNode] = useState<string>(initialNode || "all");
   const [simRunning, setSimRunning] = useState<boolean>(false);
   const [loadingSim, setLoadingSim] = useState<boolean>(false);
   const { data: k } = useDashboardKpis();
   const { data: machines = [] } = useMachines();
   const { data: alerts = [] } = useAlerts();
   const { data: incidents = [] } = useIncidents();
+
+  // Sync search param selection
+  useEffect(() => {
+    if (initialNode) {
+      setSelectedNode(initialNode);
+    }
+  }, [initialNode]);
 
   // Parse selection
   const isFiltered = selectedNode !== "all";

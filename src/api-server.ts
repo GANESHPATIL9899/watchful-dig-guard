@@ -62,7 +62,8 @@ function pushTelemetry(
   timestamp?: string,
   workerId?: string,
   workerName?: string,
-  imageUrl?: string
+  imageUrl?: string,
+  nodeId?: string
 ): void {
   const machine = machines.find((m) => m.id === machineId) ?? machines[0];
   const worker = workerId 
@@ -106,10 +107,11 @@ function pushTelemetry(
     type: emergencyStop ? "emergency_stop" : riskLevel === "critical" ? "danger_zone_entry" : "worker_near_machine",
     severity,
     machineId: machine.id,
+    nodeId,
     workerId: worker.id,
     distanceM,
     status: "active",
-    message: `${workerName ?? worker.name} detected ${distanceM.toFixed(1)}m from ${machine.id}`,
+    message: `${workerName ?? worker.name} detected ${distanceM.toFixed(1)}m from ${machine.id} (${nodeId ? nodeId.replace("node-", "Node ") : "Node 1"})`,
     createdAt: now,
   };
 
@@ -419,7 +421,8 @@ function runSimulationStep(
       timestamp,
       undefined,
       undefined,
-      camRow.image_base64_preview ?? ""
+      camRow.image_base64_preview ?? "",
+      cfg.nodeId
     );
   });
 }
@@ -571,7 +574,7 @@ const server = http.createServer((req, res) => {
       const id = `EVD-${String(9001 + i)}`;
       return {
         id,
-        imageUrl: (id === "EVD-9002" || id === "EVD-9004") ? "" : inc.imageUrl,
+        imageUrl: inc.imageUrl,
         capturedAt: inc.timestamp,
         workerId: inc.workerId,
         machineId: inc.machineId,
@@ -581,7 +584,7 @@ const server = http.createServer((req, res) => {
         emergencyStop: inc.emergencyStop,
         notes: inc.supervisorRemarks,
       };
-    });
+    }).filter(e => e.id !== "EVD-9002" && e.id !== "EVD-9004");
     return sendJson(updatedEvidence);
   }
   

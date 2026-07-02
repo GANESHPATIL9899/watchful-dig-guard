@@ -15,9 +15,7 @@ const NAV: { to: string; label: string; icon: typeof LayoutDashboard; exact?: bo
   { to: "/", label: "Executive Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/evidence", label: "Evidence Center", icon: ImageIcon },
   { to: "/workers", label: "Workers", icon: Users },
-  { to: "/incidents", label: "Incidents", icon: AlertTriangle },
   { to: "/alerts", label: "Alerts", icon: Bell },
-  { to: "/machines", label: "Fleet", icon: Truck },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 

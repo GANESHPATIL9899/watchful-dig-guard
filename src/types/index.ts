@@ -81,6 +81,7 @@ export interface Alert {
     | "communication_failure";
   severity: Severity;
   machineId: string;
+  nodeId?: string;
   workerId?: string;
   distanceM?: number;
   status: AlertStatus;

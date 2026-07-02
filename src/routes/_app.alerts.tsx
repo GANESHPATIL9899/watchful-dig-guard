@@ -53,29 +53,36 @@ function AlertsPage() {
 }
 
 function AlertRow({ a }: { a: Alert }) {
+  const nodeName = a.nodeId ? a.nodeId.replace("node-", "Node ") : "Node 1";
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4">
+    <div 
+      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 hover:border-primary/50 transition-colors cursor-pointer"
+      onClick={() => {
+        const nId = a.nodeId || "node-1";
+        window.location.href = `/?node=${a.machineId}:${nId}`;
+      }}
+    >
       <div className="flex items-start gap-3">
         <span className="mt-1 inline-block h-2 w-2 rounded-full" style={{ background: a.severity === "critical" ? "var(--critical)" : a.severity === "high" ? "var(--warning)" : "var(--info)" }} />
         <div>
           <p className="text-sm font-semibold">{a.message}</p>
-          <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="font-mono">{a.id}</span>
+          <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground font-mono">
+            <span>{a.id}</span>
             <span>·</span>
-            <span>{a.type.replace(/_/g, " ")}</span>
+            <span className="text-primary font-bold uppercase">{a.machineId} ({nodeName.toUpperCase()})</span>
             <span>·</span>
-            <span>{formatDateTime(a.createdAt)}</span>
+            <span className="capitalize">{a.type.replace(/_/g, " ")}</span>
             <span>·</span>
             <span>{relativeTime(a.createdAt)}</span>
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         <StatusBadge severity={a.severity}>{a.severity}</StatusBadge>
         <StatusBadge alertStatus={a.status}>{a.status}</StatusBadge>
-        <Button size="sm" variant="outline" onClick={() => toast.success(`Alert ${a.id} acknowledged`)}>Acknowledge</Button>
-        <Button size="sm" variant="outline" onClick={() => toast.message(`Alert ${a.id} escalated`)}>Escalate</Button>
-        <Button size="sm" onClick={() => toast.success(`Alert ${a.id} resolved`)}>Resolve</Button>
+        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); toast.success(`Alert ${a.id} acknowledged`); }}>Acknowledge</Button>
+        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); toast.message(`Alert ${a.id} escalated`); }}>Escalate</Button>
+        <Button size="sm" onClick={(e) => { e.stopPropagation(); toast.success(`Alert ${a.id} resolved`); }}>Resolve</Button>
       </div>
     </div>
   );
