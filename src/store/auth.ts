@@ -20,10 +20,7 @@ export const useAuthStore = create<AuthState>()(
         const normalizedEmail = email.toLowerCase().trim();
         const storageKey = STORAGE_PREFIX + normalizedEmail;
         
-        // Preload default supervisor account for prototype testing
-        if (normalizedEmail === "supervisor@site.local" && localStorage.getItem(storageKey) === null) {
-          localStorage.setItem(storageKey, "demo1234");
-        }
+        // Preload default supervisor account is removed for production security
 
         const storedPassword = localStorage.getItem(storageKey);
         
@@ -46,6 +43,12 @@ export const useAuthStore = create<AuthState>()(
         const normalizedEmail = email.toLowerCase().trim();
         const storageKey = STORAGE_PREFIX + normalizedEmail;
         
+        const authorizedDomains = ["site.local", "authorized.com", "safety.gov", "gmail.com", "yahoo.com", "outlook.com"];
+        const domain = normalizedEmail.split("@")[1];
+        if (!domain || !authorizedDomains.includes(domain)) {
+          throw new Error("Unauthorized email domain. Registration restricted to authorized personnel only.");
+        }
+
         if (localStorage.getItem(storageKey) !== null) {
           throw new Error("Email already registered");
         }

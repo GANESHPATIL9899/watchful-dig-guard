@@ -111,8 +111,8 @@ function LoginPage() {
   const login = useAuthStore((s) => s.login);
   const signup = useAuthStore((s) => s.signup);
   
-  const [email, setEmail] = useState("supervisor@site.local");
-  const [password, setPassword] = useState("demo1234");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   
@@ -143,7 +143,7 @@ function LoginPage() {
           return;
         }
         await signup(email, password);
-        toast.success("Account registered successfully! Please sign in.");
+        toast.success("Signup Successful");
         setIsSignUp(false);
         setPassword("");
         setConfirmPassword("");
