@@ -567,20 +567,22 @@ const server = http.createServer((req, res) => {
   if (path.startsWith("/api/alerts/")) return sendJson(alerts.find((a) => a.id === path.split("/").pop()));
   
   if (path === "/api/evidence") {
-    const updatedEvidence = incidents.map((inc, i) => ({
-      id: `EVD-${String(9001 + i)}`,
-      imageUrl: inc.imageUrl,
-      capturedAt: inc.timestamp,
-      workerId: inc.workerId,
-      machineId: inc.machineId,
-      distanceM: inc.distanceM,
-      alertType: inc.alertType,
-      confidence: 0.78 + ((i * 7) % 22) / 100,
-      emergencyStop: inc.emergencyStop,
-      notes: inc.supervisorRemarks,
-    }));
+    const updatedEvidence = incidents.map((inc, i) => {
+      const id = `EVD-${String(9001 + i)}`;
+      return {
+        id,
+        imageUrl: (id === "EVD-9002" || id === "EVD-9004") ? "" : inc.imageUrl,
+        capturedAt: inc.timestamp,
+        workerId: inc.workerId,
+        machineId: inc.machineId,
+        distanceM: inc.distanceM,
+        alertType: inc.alertType,
+        confidence: 0.78 + ((i * 7) % 22) / 100,
+        emergencyStop: inc.emergencyStop,
+        notes: inc.supervisorRemarks,
+      };
+    });
     return sendJson(updatedEvidence);
-  
   }
   
   if (path.startsWith("/api/evidence/")) return sendJson(evidence.find((e) => e.id === path.split("/").pop()));

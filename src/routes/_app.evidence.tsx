@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { EvidenceImage } from "@/types";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Camera } from "lucide-react";
 
 export const Route = createFileRoute("/_app/evidence")({
   head: () => ({
@@ -49,14 +49,21 @@ function EvidenceCardImage({
     "text-emerald-400";
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
+    <div className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center">
       {/* Real-time photo backplate */}
-      <img 
-        src={imageUrl} 
-        alt="Camera Feed Snapshot" 
-        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        referrerPolicy="no-referrer"
-      />
+      {imageUrl ? (
+        <img 
+          src={imageUrl} 
+          alt="Camera Feed Snapshot" 
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <div className="text-center p-4">
+          <Camera className="h-8 w-8 mx-auto mb-1 text-slate-500 opacity-60" />
+          <span className="font-mono text-[10px] text-slate-500 uppercase tracking-wider">No Snapshot Recorded</span>
+        </div>
+      )}
 
       {/* Screen HUD Border Overlay */}
       <div className={`absolute inset-0 border-2 ${borderCol} pointer-events-none opacity-60`} />
