@@ -30,7 +30,7 @@ function DashboardPage() {
 
   // Parse selection
   const isFiltered = selectedNode !== "all";
-  const [selectedMachineId, selectedNodeType] = isFiltered ? selectedNode.split("-") : ["", ""];
+  const [selectedMachineId, selectedNodeType] = isFiltered ? selectedNode.split(":") : ["", ""];
   const machine = machines.find((m) => m.id === selectedMachineId);
 
   // Find node inside the selected machine
@@ -75,7 +75,7 @@ function DashboardPage() {
                       {m.id} ({m.type.split(" ")[0]})
                     </SelectLabel>
                     {machineNodes.map((n) => (
-                      <SelectItem key={n.id} value={`${m.id}-${n.id}`}>
+                      <SelectItem key={n.id} value={`${m.id}:${n.id}`}>
                         ↳ {m.id} - {n.name}
                       </SelectItem>
                     ))}
