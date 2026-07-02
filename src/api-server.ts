@@ -337,38 +337,49 @@ function parseCsv(filePath: string): Record<string, string>[] {
   });
 }
 
-function runSimulationStep(
-  cameraRows: Record<string, string>[],
-  lidarRows: Record<string, string>[],
-  canbusRows: Record<string, string>[]
-) {
-  if (cameraRows.length === 0 || lidarRows.length === 0 || canbusRows.length === 0) return;
+let node01Rows: Record<string, string>[] = [];
+let node02Rows: Record<string, string>[] = [];
+let node03Rows: Record<string, string>[] = [];
+let node04Rows: Record<string, string>[] = [];
+let node05Rows: Record<string, string>[] = [];
 
-  const idx = simulationIndex % Math.min(cameraRows.length, lidarRows.length, canbusRows.length);
+function runSimulationStep() {
+  const maxRows = Math.max(
+    node01Rows.length,
+    node02Rows.length,
+    node03Rows.length,
+    node04Rows.length,
+    node05Rows.length
+  );
+  if (maxRows === 0) return;
+
+  const idx = simulationIndex;
   simulationIndex++;
 
-  const camRow = cameraRows[idx];
-  const lidRow = lidarRows[idx];
-  const canRow = canbusRows[idx];
-
-  const timestamp = camRow.timestamp || new Date().toISOString();
-
   NODES_CONFIG.forEach(cfg => {
-    const baseDist = Number(lidRow.distance_m ?? 8.0);
-    const dist = Math.max(0.2, baseDist + cfg.distOffset);
+    let rows: Record<string, string>[] = [];
+    if (cfg.nodeId === "node-1") rows = node01Rows;
+    else if (cfg.nodeId === "node-2") rows = node02Rows;
+    else if (cfg.nodeId === "node-3") rows = node03Rows;
+    else if (cfg.nodeId === "node-4") rows = node04Rows;
+    else if (cfg.nodeId === "node-5") rows = node05Rows;
 
-    let humanDet = (camRow.human_detected ?? "").toUpperCase() === "TRUE";
-    if (cfg.nodeId === "node-2" || cfg.nodeId === "node-4") {
-      if (dist > 5.0) humanDet = false;
-    }
+    if (rows.length === 0) return;
+    const row = rows[idx % rows.length];
 
-    const baseSpeed = Number(canRow.machine_speed_kmh ?? 0.0);
-    const speed = Math.max(0.0, baseSpeed + cfg.speedOffset);
+    const timestamp = row.timestamp || new Date().toISOString();
+    const dist = Number(row.distance_m ?? 8.0);
+    const humanDet = (row.human_detected ?? "").toUpperCase() === "TRUE";
+    const speed = Number(row.machine_speed_kmh ?? 0.0);
+    const state = row.machine_state ?? "active";
+    const rotation = Number(row.cabin_rotation_deg ?? 0);
+    const image = row.image_base64_preview ?? "";
 
+    // Update nodes directly in local memory
     let machine = machines.find((m) => m.id === cfg.machineId);
     if (machine) {
       machine.speedKph = Math.round(speed);
-      machine.status = (canRow.machine_state ?? "active") as any;
+      machine.status = state as any;
 
       if (!machine.nodes) machine.nodes = [];
       let node = machine.nodes.find(n => n.id === cfg.nodeId);
@@ -387,22 +398,22 @@ function runSimulationStep(
 
       node.latestLidarDistance = Number(dist.toFixed(2));
       node.latestHumanDetected = humanDet;
-      node.latestCameraImage = camRow.image_base64_preview ?? "";
+      node.latestCameraImage = image;
     }
 
     if (mqttClient && mqttClient.connected) {
       const topicPrefix = `machine/${cfg.machineId}/node/${cfg.nodeId}`;
       mqttClient.publish(`${topicPrefix}/camera`, JSON.stringify({
         timestamp,
-        device_id: camRow.device_id,
+        device_id: row.node_id || `ESP32-S3-CAM-${cfg.nodeId}`,
         human_detected: humanDet,
-        confidence_score: Number(camRow.confidence_score ?? 0.0),
-        image_base64_preview: camRow.image_base64_preview ?? ""
+        confidence_score: Number(row.confidence_score ?? 0.0),
+        image_base64_preview: image
       }));
 
       mqttClient.publish(`${topicPrefix}/lidar`, JSON.stringify({
         timestamp,
-        sensor_id: lidRow.sensor_id,
+        sensor_id: `TF-LUNA-${cfg.nodeId}`,
         distance_m: Number(dist.toFixed(2))
       }));
 
@@ -410,8 +421,8 @@ function runSimulationStep(
         timestamp,
         machine_id: cfg.machineId,
         machine_speed_kmh: Number(speed.toFixed(1)),
-        machine_state: canRow.machine_state ?? "active",
-        cabin_rotation_deg: Number(canRow.cabin_rotation_deg ?? 0)
+        machine_state: state,
+        cabin_rotation_deg: rotation
       }));
     }
 
@@ -421,7 +432,7 @@ function runSimulationStep(
       timestamp,
       undefined,
       undefined,
-      camRow.image_base64_preview ?? "",
+      image,
       cfg.nodeId
     );
   });
@@ -432,13 +443,15 @@ function startSimulation() {
   
   try {
     const dataDir = path.join(process.cwd(), "data");
-    const cameraRows = parseCsv(path.join(dataDir, "camera_telemetry_stream.csv"));
-    const lidarRows = parseCsv(path.join(dataDir, "luna_lidar_stream.csv"));
-    const canbusRows = parseCsv(path.join(dataDir, "canbus_vehicle_stream.csv"));
+    node01Rows = parseCsv(path.join(dataDir, "node_01_fused.csv"));
+    node02Rows = parseCsv(path.join(dataDir, "node_02_fused.csv"));
+    node03Rows = parseCsv(path.join(dataDir, "node_03_fused.csv"));
+    node04Rows = parseCsv(path.join(dataDir, "node_04_fused.csv"));
+    node05Rows = parseCsv(path.join(dataDir, "node_05_fused.csv"));
 
     isSimulationRunning = true;
     simulationTimer = setInterval(() => {
-      runSimulationStep(cameraRows, lidarRows, canbusRows);
+      runSimulationStep();
     }, 2000);
 
     console.log("▶️ Background Simulation Started!");
