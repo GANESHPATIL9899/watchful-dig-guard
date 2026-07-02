@@ -172,10 +172,23 @@ function startAwsIotClient() {
 
     const client = mqtt.connect(`mqtts://${endpoint}:443`, options);
 
-    // Buffer state to merge the 3 decoupled topics
-    let latestLidarDistance = 8.0; 
-    let latestCameraImage = "";
-    let latestHumanDetected = false;
+    // Buffers dictionary keyed by machineId
+    const machineBuffers: Record<string, {
+      latestLidarDistance: number;
+      latestCameraImage: string;
+      latestHumanDetected: boolean;
+    }> = {};
+
+    function getOrCreateBuffer(machineId: string) {
+      if (!machineBuffers[machineId]) {
+        machineBuffers[machineId] = {
+          latestLidarDistance: 8.0,
+          latestCameraImage: "",
+          latestHumanDetected: false,
+        };
+      }
+      return machineBuffers[machineId];
+    }
 
     client.on("connect", () => {
       console.log("✅ Connected to AWS IoT Core MQTT Broker!");
@@ -193,23 +206,65 @@ function startAwsIotClient() {
         const payload = JSON.parse(message.toString());
         console.log(`📥 Received MQTT [${topicName}]:`, payload);
 
-        if (topicName.endsWith("/lidar")) {
-          latestLidarDistance = Number(payload.distance_m ?? 8.0);
-        } else if (topicName.endsWith("/camera")) {
-          latestHumanDetected = !!payload.human_detected;
-          latestCameraImage = payload.image_base64_preview ?? "";
-        } else if (topicName.endsWith("/canbus")) {
-          const machineId = payload.machine_id ?? "EXC-005";
+        // Topic format: machine/<machineId>/<nodeType>
+        const parts = topicName.split("/");
+        if (parts.length < 3) return;
+
+        const machineId = parts[1];
+        const nodeType = parts[2];
+        const buffer = getOrCreateBuffer(machineId);
+
+        // Dynamically register the machine in the global machines array if not present
+        let machine = machines.find((m) => m.id === machineId);
+        if (!machine) {
+          machine = {
+            id: machineId,
+            type: "Excavator Node",
+            operator: `Operator ${machineId}`,
+            location: "Sector 5 — Excavation Pit",
+            status: "active",
+            speedKph: 0,
+            hydraulic: "engaged",
+            engine: "running",
+            healthScore: 95,
+            gps: { lat: 19.076 + Math.random() * 0.005, lng: 72.877 + Math.random() * 0.005 },
+            cameraStatus: "online",
+            lidarStatus: "online",
+            canBusStatus: "online",
+            lastIncidentAt: new Date().toISOString(),
+          };
+          machines.push(machine);
+        }
+
+        if (nodeType === "lidar") {
+          buffer.latestLidarDistance = Number(payload.distance_m ?? 8.0);
+        } else if (nodeType === "camera") {
+          buffer.latestHumanDetected = !!payload.human_detected;
+          buffer.latestCameraImage = payload.image_base64_preview ?? "";
+        } else if (nodeType === "canbus") {
+          machine.speedKph = Math.round(Number(payload.machine_speed_kmh ?? 0));
+          machine.status = payload.machine_state ?? "active";
           
           // Push to dashboard when Canbus completes the message cycle
           pushTelemetry(
             machineId,
-            latestHumanDetected ? latestLidarDistance : 8.0, 
+            buffer.latestHumanDetected ? buffer.latestLidarDistance : 8.0, 
             payload.timestamp,
             undefined, 
             undefined, 
-            latestCameraImage
+            buffer.latestCameraImage
           );
+        } else if (nodeType === "gps") {
+          const lat = Number(payload.lat ?? payload.latitude);
+          const lng = Number(payload.lng ?? payload.longitude);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            machine.gps = { lat, lng };
+          }
+        } else if (nodeType === "health") {
+          const score = Number(payload.health_score ?? payload.score);
+          if (!isNaN(score)) {
+            machine.healthScore = score;
+          }
         }
       } catch (err) {
         console.error("⚠️ Failed to parse message payload JSON:", message.toString(), err);
