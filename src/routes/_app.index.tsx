@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppShell } from "@/components/common/AppShell";
 import { KpiCard } from "@/components/common/KpiCard";
 import { useDashboardKpis, useMachines, useAlerts, useIncidents } from "@/hooks/data";
 import { SiteHeatMap } from "@/components/dashboard/SiteHeatMap";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { RecentCriticalEvents } from "@/components/dashboard/RecentCriticalEvents";
-import { Truck, Users, Bell, OctagonX, AlertTriangle, ShieldCheck, Camera, Activity, Cpu, Wifi, Eye } from "lucide-react";
+import { Truck, Users, Bell, OctagonX, AlertTriangle, ShieldCheck, Camera, Activity, Cpu, Wifi, Eye, Play, Pause, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
@@ -23,6 +23,8 @@ export const Route = createFileRoute("/_app/")({
 
 function DashboardPage() {
   const [selectedNode, setSelectedNode] = useState<string>("all");
+  const [simRunning, setSimRunning] = useState<boolean>(false);
+  const [loadingSim, setLoadingSim] = useState<boolean>(false);
   const { data: k } = useDashboardKpis();
   const { data: machines = [] } = useMachines();
   const { data: alerts = [] } = useAlerts();
@@ -44,6 +46,30 @@ function DashboardPage() {
   const machineAlerts = alerts.filter(a => a.machineId === selectedMachineId && a.status === "active").length;
   const machineEstops = incidents.filter(i => i.machineId === selectedMachineId && i.emergencyStop).length;
 
+  // Check status on mount
+  useEffect(() => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL.replace("/api", "");
+    fetch(`${baseUrl}/api/simulation/status`)
+      .then(res => res.json())
+      .then(data => setSimRunning(!!data.running))
+      .catch(err => console.error("Error checking simulation status:", err));
+  }, []);
+
+  const toggleSimulation = async () => {
+    setLoadingSim(true);
+    try {
+      const endpoint = simRunning ? "/api/simulation/stop" : "/api/simulation/start";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL.replace("/api", "");
+      const res = await fetch(`${baseUrl}${endpoint}`, { method: "POST" });
+      const data = await res.json();
+      setSimRunning(!!data.running);
+    } catch (err) {
+      console.error("Error toggling simulation:", err);
+    } finally {
+      setLoadingSim(false);
+    }
+  };
+
   return (
     <AppShell
       title="Executive Dashboard"
@@ -54,6 +80,26 @@ function DashboardPage() {
       }
       toolbar={
         <div className="flex items-center gap-3">
+          <Button 
+            variant={simRunning ? "destructive" : "outline"} 
+            size="sm" 
+            className={`gap-2 ${!simRunning && 'border-safe/50 hover:bg-safe/10 hover:text-safe'}`}
+            onClick={toggleSimulation}
+            disabled={loadingSim}
+          >
+            {loadingSim ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : simRunning ? (
+              <>
+                <Pause className="h-4 w-4 fill-current" /> Stop Simulation
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 fill-current text-safe" /> Start Simulation
+              </>
+            )}
+          </Button>
+
           <Select value={selectedNode} onValueChange={setSelectedNode}>
             <SelectTrigger className="w-[300px] bg-card border-border">
               <SelectValue placeholder="Select Node / Machine" />

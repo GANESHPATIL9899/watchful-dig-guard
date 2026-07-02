@@ -170,7 +170,8 @@ function startAwsIotClient() {
       ALPNProtocols: ["x-amzn-mqtt-ca"],
     };
 
-    const client = mqtt.connect(`mqtts://${endpoint}:443`, options);
+    mqttClient = mqtt.connect(`mqtts://${endpoint}:443`, options);
+    const client = mqttClient;
 
     client.on("connect", () => {
       console.log("✅ Connected to AWS IoT Core MQTT Broker!");
@@ -297,6 +298,160 @@ function startAwsIotClient() {
     console.error("❌ Failed to initialize AWS IoT client:", err.message);
   }
 }
+let mqttClient: any = null;
+let simulationTimer: NodeJS.Timeout | null = null;
+let simulationIndex = 0;
+let isSimulationRunning = false;
+
+interface NodeConfig {
+  machineId: string;
+  nodeId: string;
+  distOffset: number;
+  speedOffset: number;
+}
+
+const NODES_CONFIG: NodeConfig[] = [
+  { machineId: "EX-2001", nodeId: "node-1", distOffset: 0.0, speedOffset: 0.0 },
+  { machineId: "EX-2001", nodeId: "node-2", distOffset: 1.5, speedOffset: 0.0 },
+  { machineId: "EX-2002", nodeId: "node-3", distOffset: -0.8, speedOffset: 2.0 },
+  { machineId: "EX-2002", nodeId: "node-4", distOffset: 0.5, speedOffset: 2.0 },
+  { machineId: "EX-2003", nodeId: "node-5", distOffset: 2.2, speedOffset: -1.5 },
+];
+
+function parseCsv(filePath: string): Record<string, string>[] {
+  const content = fs.readFileSync(filePath, "utf-8");
+  const lines = content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length === 0) return [];
+  const headers = lines[0].split(",");
+  return lines.slice(1).map(line => {
+    const values = line.split(",");
+    const row: Record<string, string> = {};
+    headers.forEach((h, index) => {
+      row[h] = values[index] ?? "";
+    });
+    return row;
+  });
+}
+
+function runSimulationStep(
+  cameraRows: Record<string, string>[],
+  lidarRows: Record<string, string>[],
+  canbusRows: Record<string, string>[]
+) {
+  if (cameraRows.length === 0 || lidarRows.length === 0 || canbusRows.length === 0) return;
+
+  const idx = simulationIndex % Math.min(cameraRows.length, lidarRows.length, canbusRows.length);
+  simulationIndex++;
+
+  const camRow = cameraRows[idx];
+  const lidRow = lidarRows[idx];
+  const canRow = canbusRows[idx];
+
+  const timestamp = camRow.timestamp || new Date().toISOString();
+
+  NODES_CONFIG.forEach(cfg => {
+    const baseDist = Number(lidRow.distance_m ?? 8.0);
+    const dist = Math.max(0.2, baseDist + cfg.distOffset);
+
+    let humanDet = (camRow.human_detected ?? "").toUpperCase() === "TRUE";
+    if (cfg.nodeId === "node-2" || cfg.nodeId === "node-4") {
+      if (dist > 5.0) humanDet = false;
+    }
+
+    const baseSpeed = Number(canRow.machine_speed_kmh ?? 0.0);
+    const speed = Math.max(0.0, baseSpeed + cfg.speedOffset);
+
+    let machine = machines.find((m) => m.id === cfg.machineId);
+    if (machine) {
+      machine.speedKph = Math.round(speed);
+      machine.status = (canRow.machine_state ?? "active") as any;
+
+      if (!machine.nodes) machine.nodes = [];
+      let node = machine.nodes.find(n => n.id === cfg.nodeId);
+      if (!node) {
+        node = {
+          id: cfg.nodeId,
+          name: `Sensor Node ${cfg.nodeId.toUpperCase()}`,
+          cameraStatus: "online",
+          lidarStatus: "online",
+          latestLidarDistance: 8.0,
+          latestCameraImage: "",
+          latestHumanDetected: false
+        };
+        machine.nodes.push(node);
+      }
+
+      node.latestLidarDistance = Number(dist.toFixed(2));
+      node.latestHumanDetected = humanDet;
+      node.latestCameraImage = camRow.image_base64_preview ?? "";
+    }
+
+    if (mqttClient && mqttClient.connected) {
+      const topicPrefix = `machine/${cfg.machineId}/node/${cfg.nodeId}`;
+      mqttClient.publish(`${topicPrefix}/camera`, JSON.stringify({
+        timestamp,
+        device_id: camRow.device_id,
+        human_detected: humanDet,
+        confidence_score: Number(camRow.confidence_score ?? 0.0),
+        image_base64_preview: camRow.image_base64_preview ?? ""
+      }));
+
+      mqttClient.publish(`${topicPrefix}/lidar`, JSON.stringify({
+        timestamp,
+        sensor_id: lidRow.sensor_id,
+        distance_m: Number(dist.toFixed(2))
+      }));
+
+      mqttClient.publish(`${topicPrefix}/canbus`, JSON.stringify({
+        timestamp,
+        machine_id: cfg.machineId,
+        machine_speed_kmh: Number(speed.toFixed(1)),
+        machine_state: canRow.machine_state ?? "active",
+        cabin_rotation_deg: Number(canRow.cabin_rotation_deg ?? 0)
+      }));
+    }
+
+    pushTelemetry(
+      cfg.machineId,
+      humanDet ? dist : 8.0,
+      timestamp,
+      undefined,
+      undefined,
+      camRow.image_base64_preview ?? ""
+    );
+  });
+}
+
+function startSimulation() {
+  if (isSimulationRunning) return;
+  
+  try {
+    const dataDir = path.join(process.cwd(), "data");
+    const cameraRows = parseCsv(path.join(dataDir, "camera_telemetry_stream.csv"));
+    const lidarRows = parseCsv(path.join(dataDir, "luna_lidar_stream.csv"));
+    const canbusRows = parseCsv(path.join(dataDir, "canbus_vehicle_stream.csv"));
+
+    isSimulationRunning = true;
+    simulationTimer = setInterval(() => {
+      runSimulationStep(cameraRows, lidarRows, canbusRows);
+    }, 2000);
+
+    console.log("▶️ Background Simulation Started!");
+  } catch (err: any) {
+    console.error("❌ Failed to start simulation:", err.message);
+  }
+}
+
+function stopSimulation() {
+  if (!isSimulationRunning) return;
+  if (simulationTimer) {
+    clearInterval(simulationTimer);
+    simulationTimer = null;
+  }
+  isSimulationRunning = false;
+  console.log("⏸️ Background Simulation Stopped.");
+}
+
 // Create a standard Node.js HTTP server to ensure 100% compatibility on Render without Bun
 const server = http.createServer((req, res) => {
   const url = new URL(req.url ?? "", `http://${req.headers.host || "localhost"}`);
@@ -333,6 +488,23 @@ const server = http.createServer((req, res) => {
       }
     });
   };
+
+  if (req.method === "POST" && path === "/api/simulation/start") {
+    startSimulation();
+    sendJson({ ok: true, running: true });
+    return;
+  }
+
+  if (req.method === "POST" && path === "/api/simulation/stop") {
+    stopSimulation();
+    sendJson({ ok: true, running: false });
+    return;
+  }
+
+  if (req.method === "GET" && path === "/api/simulation/status") {
+    sendJson({ running: isSimulationRunning });
+    return;
+  }
 
   if (req.method === "POST" && path === "/api/iot/telemetry") {
     handlePost((body) => {
