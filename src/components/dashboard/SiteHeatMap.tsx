@@ -5,7 +5,11 @@ import { StatusBadge } from "@/components/common/StatusBadge";
  * Stylized site overhead map — SVG-based, semantic colors, no external deps.
  * Excavators rendered with their zones; recent incidents shown as pulse dots.
  */
-export function SiteHeatMap() {
+interface Props {
+  selectedNode?: string;
+}
+
+export function SiteHeatMap({ selectedNode = "all" }: Props) {
   const { data: machines = [] } = useMachines();
   const { data: incidents = [] } = useIncidents();
   const recent = incidents.slice(0, 8);
@@ -50,13 +54,20 @@ export function SiteHeatMap() {
           {/* Machines */}
           {machines.map((m, i) => {
             const p = pin(i + 1, 0);
+            const isSelected = selectedNode === m.id;
             const tone =
               m.status === "maintenance" ? "oklch(0.7 0.04 250)" : m.healthScore < 80 ? "oklch(0.7 0.15 80)" : "oklch(0.5 0.12 250)";
             return (
-              <g key={m.id} transform={`translate(${p.x} ${p.y})`}>
-                <circle r="14" fill={tone} opacity="0.2" />
-                <rect x="-9" y="-7" width="18" height="14" rx="2" fill={tone} />
-                <text x="0" y="28" textAnchor="middle" fontSize="9" className="fill-foreground" fontFamily="JetBrains Mono">
+              <g key={m.id} transform={`translate(${p.x} ${p.y})`} className={isSelected ? "scale-110" : ""}>
+                {isSelected ? (
+                  <circle r="22" fill="none" stroke="oklch(0.6 0.23 25)" strokeWidth="2" strokeDasharray="3 3">
+                    <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="8s" repeatCount="indefinite" />
+                  </circle>
+                ) : (
+                  <circle r="14" fill={tone} opacity="0.2" />
+                )}
+                <rect x="-9" y="-7" width="18" height="14" rx="2" fill={tone} stroke={isSelected ? "oklch(0.6 0.23 25)" : "none"} strokeWidth="1.5" />
+                <text x="0" y="28" textAnchor="middle" fontSize="9" className={isSelected ? "fill-critical font-bold" : "fill-foreground"} fontFamily="JetBrains Mono">
                   {m.id}
                 </text>
               </g>

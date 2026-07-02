@@ -7,10 +7,15 @@ import { relativeTime } from "@/utils/format";
 import type { Incident } from "@/types";
 import { useNavigate } from "@tanstack/react-router";
 
-export function RecentCriticalEvents() {
+interface Props {
+  selectedNode?: string;
+}
+
+export function RecentCriticalEvents({ selectedNode = "all" }: Props) {
   const { data: incidents = [] } = useIncidents();
   const navigate = useNavigate();
   const critical = incidents
+    .filter((i) => selectedNode === "all" || i.machineId === selectedNode)
     .filter((i) => i.riskLevel === "critical" || i.riskLevel === "emergency")
     .slice(0, 6);
 
