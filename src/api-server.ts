@@ -90,7 +90,9 @@ function pushTelemetry(
     riskLevel,
     severity,
     alertType: riskLevel === "safe" ? "Worker Detected" : "Blind Spot Breach",
-    imageUrl: imageUrl || (incidents.length > 0 ? incidents[Math.floor(Math.random() * incidents.length)].imageUrl : ""),
+    imageUrl: (imageUrl && imageUrl !== "NULL" && imageUrl !== "none" && imageUrl !== "undefined")
+      ? imageUrl
+      : (incidents.length > 0 ? incidents[Math.floor(Math.random() * incidents.length)].imageUrl : "/images/extracted_image_1.jpg"),
     actionTaken: emergencyStop ? "Emergency stop engaged - hydraulic lock" : "Audio + visual alert issued",
     emergencyStop,
     resolutionStatus: emergencyStop ? "open" : "investigating",
