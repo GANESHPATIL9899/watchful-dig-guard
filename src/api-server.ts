@@ -115,8 +115,8 @@ function pushTelemetry(
     createdAt: now,
   };
 
-  incidents = [incident, ...incidents].slice(0, 24);
-  alerts = [alert, ...alerts].slice(0, 40);
+  incidents = [incident, ...incidents].slice(0, 10);
+  alerts = [alert, ...alerts].slice(0, 5);
   workersDetectedToday += 1;
 
   const latest = trend.at(-1);

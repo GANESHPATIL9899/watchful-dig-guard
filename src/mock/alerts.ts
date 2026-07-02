@@ -4,7 +4,7 @@ import { incidents } from "./incidents";
 const TYPE_BY_SEV = (sev: string): Alert["type"] =>
   sev === "critical" ? "emergency_stop" : sev === "high" ? "danger_zone_entry" : "worker_near_machine";
 
-export const alerts: Alert[] = incidents.slice(0, 22).map((inc, i) => {
+export const alerts: Alert[] = incidents.slice(0, 4).map((inc, i) => {
   const nodeId = inc.machineId === "EX-2001" ? (i % 2 === 0 ? "node-1" : "node-2") :
                  inc.machineId === "EX-2002" ? (i % 2 === 0 ? "node-3" : "node-4") :
                  inc.machineId === "EX-2003" ? "node-5" : undefined;

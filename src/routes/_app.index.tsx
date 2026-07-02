@@ -196,8 +196,9 @@ function DashboardPage() {
                   const imageUrl = hasLiveImage 
                     ? (node.latestCameraImage.startsWith("data:") ? node.latestCameraImage : `data:image/jpeg;base64,${node.latestCameraImage}`)
                     : (() => {
+                        const distInt = Math.floor(node.latestLidarDistance * 100);
                         const charSum = (selectedMachineId + node.id).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        return DEMO_IMAGES[charSum % DEMO_IMAGES.length];
+                        return DEMO_IMAGES[(charSum + distInt) % DEMO_IMAGES.length];
                       })();
                   return (
                     <img 
