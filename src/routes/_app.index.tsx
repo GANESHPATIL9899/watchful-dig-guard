@@ -4,10 +4,21 @@ import { AppShell } from "@/components/common/AppShell";
 import { KpiCard } from "@/components/common/KpiCard";
 import { useDashboardKpis, useMachines, useAlerts, useIncidents } from "@/hooks/data";
 import { TrendChart } from "@/components/dashboard/TrendChart";
-import { Truck, Users, Bell, OctagonX, AlertTriangle, ShieldCheck, Camera, Activity, Cpu, Wifi, Eye, Play, Pause, Loader2 } from "lucide-react";
+import { ShieldCheck, Camera, Activity, Cpu, Play, Pause, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+
+const DEMO_IMAGES = [
+  "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg",
+  "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
+  "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg",
+  "/images/e38eb590-5b5c-482b-adec-9349471c3f74.jpeg",
+  "/images/133e2b71-fd40-4552-9d32-c2c587e95ea1.jpeg",
+  "/images/431f5256-0b8b-45fa-90b3-388a11e6221c.jpeg",
+  "/images/4247bd78-7e89-4ca5-a730-7884ccb32342.jpeg",
+  "/images/a50bd700-a1f5-46ef-a900-5141af107163.jpeg"
+];
 
 export const Route = createFileRoute("/_app/")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -148,23 +159,11 @@ function DashboardPage() {
       }
     >
       {!isFiltered ? null : machine && node ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <KpiCard label="Selected Unit" value={node.name} icon={Cpu} tone="info" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <KpiCard label="Selected Unit" value={`${machine.id} - ${node.name}`} icon={Cpu} tone="info" />
           <KpiCard 
-            label="Lidar Sensor" 
-            value={node.lidarStatus.toUpperCase()} 
-            icon={Wifi} 
-            tone={node.lidarStatus === "online" ? "safe" : node.lidarStatus === "degraded" ? "warning" : "critical"} 
-          />
-          <KpiCard 
-            label="Camera Sensor" 
-            value={node.cameraStatus.toUpperCase()} 
-            icon={Camera} 
-            tone={node.cameraStatus === "online" ? "safe" : node.cameraStatus === "degraded" ? "warning" : "critical"} 
-          />
-          <KpiCard 
-            label="Ranging Proximity" 
-            value={node.latestLidarDistance < 8.0 ? `${node.latestLidarDistance.toFixed(1)} m` : "Safe (>8m)"} 
+            label="Lidar Sensor Distance" 
+            value={`${node.latestLidarDistance.toFixed(2)} m`} 
             icon={Activity} 
             tone={node.latestHumanDetected && node.latestLidarDistance < 1.5 ? "critical" : node.latestHumanDetected && node.latestLidarDistance < 3.0 ? "warning" : "safe"} 
           />
@@ -174,9 +173,6 @@ function DashboardPage() {
             icon={ShieldCheck} 
             tone={node.latestHumanDetected ? "critical" : "safe"} 
           />
-          <KpiCard label="Assigned Operator" value={machine.operator} icon={Users} tone="default" />
-          <KpiCard label="Machine Speed" value={`${machine.speedKph} km/h`} icon={Truck} tone="info" />
-          <KpiCard label="Active Alerts (Machine)" value={machineAlerts} icon={Bell} tone={machineAlerts > 0 ? "critical" : "safe"} />
         </div>
       ) : (
         <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
@@ -185,7 +181,7 @@ function DashboardPage() {
       )}
 
       <div className="mt-6">
-        {isFiltered && node?.latestCameraImage ? (
+        {isFiltered && node ? (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-lg border border-border bg-card overflow-hidden flex flex-col justify-between">
               <div className="border-b border-border px-4 py-3 bg-muted/20">
@@ -195,15 +191,26 @@ function DashboardPage() {
                 <p className="text-xs text-muted-foreground">{selectedMachineId} · {node.name}</p>
               </div>
               <div className="flex-1 flex items-center justify-center p-4 bg-black/95">
-                <img 
-                  src={node.latestCameraImage.startsWith("data:") ? node.latestCameraImage : `data:image/jpeg;base64,${node.latestCameraImage}`} 
-                  alt="AI Detection Snapshot" 
-                  className="max-h-[320px] object-contain rounded-sm border border-muted-foreground/20 shadow-lg"
-                />
+                {(() => {
+                  const hasLiveImage = node.latestCameraImage && node.latestCameraImage !== "NULL" && node.latestCameraImage !== "none";
+                  const imageUrl = hasLiveImage 
+                    ? (node.latestCameraImage.startsWith("data:") ? node.latestCameraImage : `data:image/jpeg;base64,${node.latestCameraImage}`)
+                    : (() => {
+                        const charSum = (selectedMachineId + node.id).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                        return DEMO_IMAGES[charSum % DEMO_IMAGES.length];
+                      })();
+                  return (
+                    <img 
+                      src={imageUrl} 
+                      alt="AI Detection Snapshot" 
+                      className="max-h-[320px] object-contain rounded-sm border border-muted-foreground/20 shadow-lg"
+                    />
+                  );
+                })()}
               </div>
               <div className="px-4 py-2 bg-muted/40 border-t border-border flex items-center justify-between text-xs">
                 <span className="font-semibold text-critical">⚠️ AI Detection Active</span>
-                <span className="text-muted-foreground">Proximity: {node.latestLidarDistance.toFixed(1)}m</span>
+                <span className="text-muted-foreground">Proximity: {node.latestLidarDistance.toFixed(2)}m</span>
               </div>
             </div>
             <TrendChart />
