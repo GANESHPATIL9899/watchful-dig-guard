@@ -292,13 +292,25 @@ function startAwsIotClient() {
         // Find or create the specific node
         let node = machine.nodes.find((n) => n.id === nodeId);
         if (!node) {
+          const charSum = (machineId + nodeId).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const dummyImages = [
+            "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg",
+            "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
+            "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg",
+            "/images/e38eb590-5b5c-482b-adec-9349471c3f74.jpeg",
+            "/images/133e2b71-fd40-4552-9d32-c2c587e95ea1.jpeg",
+            "/images/431f5256-0b8b-45fa-90b3-388a11e6221c.jpeg",
+            "/images/4247bd78-7e89-4ca5-a730-7884ccb32342.jpeg",
+            "/images/a50bd700-a1f5-46ef-a900-5141af107163.jpeg"
+          ];
+          const defaultImage = dummyImages[charSum % dummyImages.length];
           node = {
             id: nodeId,
             name: `Sensor Node ${nodeId.toUpperCase()}`,
             cameraStatus: "online",
             lidarStatus: "online",
             latestLidarDistance: 8.0,
-            latestCameraImage: "",
+            latestCameraImage: defaultImage,
             latestHumanDetected: false
           };
           machine.nodes.push(node);
@@ -309,7 +321,9 @@ function startAwsIotClient() {
           node.lidarStatus = payload.status ?? "online";
         } else if (sensorType === "camera") {
           node.latestHumanDetected = !!payload.human_detected;
-          node.latestCameraImage = payload.image_base64_preview ?? "";
+          node.latestCameraImage = (payload.image_base64_preview && payload.image_base64_preview !== "NULL" && payload.image_base64_preview !== "none")
+            ? payload.image_base64_preview
+            : node.latestCameraImage;
           node.cameraStatus = payload.status ?? "online";
         } else if (sensorType === "canbus") {
           machine.speedKph = Math.round(Number(payload.machine_speed_kmh ?? 0));
@@ -421,7 +435,22 @@ function runSimulationStep() {
     const speed = Number(row.machine_speed_kmh ?? 0.0);
     const state = row.machine_state ?? "active";
     const rotation = Number(row.cabin_rotation_deg ?? 0);
-    const image = row.image_base64_preview ?? "";
+    let image = row.image_base64_preview ?? "";
+    if (!image || image === "NULL" || image === "none") {
+      const charSum = (cfg.machineId + cfg.nodeId).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const distInt = Math.floor(dist * 100);
+      const dummyImages = [
+        "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg",
+        "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
+        "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg",
+        "/images/e38eb590-5b5c-482b-adec-9349471c3f74.jpeg",
+        "/images/133e2b71-fd40-4552-9d32-c2c587e95ea1.jpeg",
+        "/images/431f5256-0b8b-45fa-90b3-388a11e6221c.jpeg",
+        "/images/4247bd78-7e89-4ca5-a730-7884ccb32342.jpeg",
+        "/images/a50bd700-a1f5-46ef-a900-5141af107163.jpeg"
+      ];
+      image = dummyImages[(charSum + distInt) % dummyImages.length];
+    }
 
     // Update nodes directly in local memory
     let machine = machines.find((m) => m.id === cfg.machineId);
@@ -438,7 +467,7 @@ function runSimulationStep() {
           cameraStatus: "online",
           lidarStatus: "online",
           latestLidarDistance: 8.0,
-          latestCameraImage: "",
+          latestCameraImage: image,
           latestHumanDetected: false
         };
         machine.nodes.push(node);
