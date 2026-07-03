@@ -15,6 +15,54 @@ import type { Alert, Incident, KpiSnapshot, Machine, TrendPoint } from "./types"
 const PORT = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
 const REFRESH_MS = Number(process.env.IOT_SIM_REFRESH_MS ?? 3000);
 
+const USERS_FILE = path.join(process.cwd(), "users.json");
+
+function loadUsers(): Record<string, any> {
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      const data = fs.readFileSync(USERS_FILE, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("Error reading users.json:", err);
+  }
+  return {
+    "supervisor@site.local": {
+      password: "demo1234",
+      role: "supervisor",
+      name: "Supervisor"
+    }
+  };
+}
+
+function saveUsers(users: Record<string, any>) {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error writing users.json:", err);
+  }
+}
+
+function validatePassword(password: string): string | null {
+  if (password.length < 8) {
+    return "Password must be at least 8 characters long.";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Password must contain at least one uppercase letter.";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "Password must contain at least one lowercase letter.";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "Password must contain at least one number.";
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return "Password must contain at least one special character.";
+  }
+  return null;
+}
+
+
 let machines: Machine[] = seedMachines.map((machine) => ({ ...machine, gps: { ...machine.gps } }));
 let incidents: Incident[] = [...seedIncidents];
 let alerts: Alert[] = [...seedAlerts];
@@ -563,6 +611,65 @@ const server = http.createServer((req, res) => {
         }
       }
       sendJson({ ok: true, message: `Processed ${parsedCount} rows from CSV`, kpis: currentKpis() });
+    });
+    return;
+  }
+
+  if (req.method === "POST" && path === "/api/auth/signup") {
+    handlePost((body) => {
+      const { email, password } = JSON.parse(body || "{}");
+      if (!email || !password) {
+        return sendJson({ error: "Email and password are required" }, 400);
+      }
+      
+      const emailLower = email.toLowerCase().trim();
+      
+      // Password validation
+      const pwdError = validatePassword(password);
+      if (pwdError) {
+        return sendJson({ error: pwdError }, 400);
+      }
+
+      // Check if user exists
+      const users = loadUsers();
+      if (users[emailLower]) {
+        return sendJson({ error: "Email already registered" }, 400);
+      }
+
+      // Save user
+      users[emailLower] = {
+        password,
+        role: "supervisor",
+        name: emailLower.split("@")[0].replace(/\b\w/g, (c: string) => c.toUpperCase())
+      };
+      saveUsers(users);
+
+      sendJson({ ok: true });
+    });
+    return;
+  }
+
+  if (req.method === "POST" && path === "/api/auth/login") {
+    handlePost((body) => {
+      const { email, password } = JSON.parse(body || "{}");
+      if (!email || !password) {
+        return sendJson({ error: "Email and password are required" }, 400);
+      }
+
+      const emailLower = email.toLowerCase().trim();
+      const users = loadUsers();
+      const user = users[emailLower];
+
+      if (!user || user.password !== password) {
+        return sendJson({ error: "Invalid email or password" }, 401);
+      }
+
+      sendJson({
+        id: `USR-${Math.floor(100 + Math.random() * 900)}`,
+        name: user.name,
+        email: emailLower,
+        role: user.role,
+      });
     });
     return;
   }

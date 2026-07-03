@@ -125,6 +125,24 @@ function LoginPage() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
   };
 
+  // Password validation helper
+  const validatePassword = (pwd: string): string | null => {
+    if (pwd.length < 8) return "Password must be at least 8 characters long.";
+    if (!/[A-Z]/.test(pwd)) return "Password must contain at least one uppercase letter (A-Z).";
+    if (!/[a-z]/.test(pwd)) return "Password must contain at least one lowercase letter (a-z).";
+    if (!/[0-9]/.test(pwd)) return "Password must contain at least one number (0-9).";
+    if (!/[^A-Za-z0-9]/.test(pwd)) return "Password must contain at least one special character.";
+    return null;
+  };
+
+  const rules = [
+    { label: "At least 8 characters", valid: password.length >= 8 },
+    { label: "At least one uppercase (A-Z)", valid: /[A-Z]/.test(password) },
+    { label: "At least one lowercase (a-z)", valid: /[a-z]/.test(password) },
+    { label: "At least one number (0-9)", valid: /[0-9]/.test(password) },
+    { label: "At least one special character", valid: /[^A-Za-z0-9]/.test(password) },
+  ];
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -137,6 +155,12 @@ function LoginPage() {
 
     try {
       if (isSignUp) {
+        const pwdError = validatePassword(password);
+        if (pwdError) {
+          toast.error(pwdError);
+          setLoading(false);
+          return;
+        }
         if (password !== confirmPassword) {
           toast.error("Passwords do not match");
           setLoading(false);
@@ -266,6 +290,21 @@ function LoginPage() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {isSignUp && password.length > 0 && (
+                  <div className="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1.5 text-xs text-left w-full">
+                    <p className="font-bold text-slate-600 mb-1">Password Requirements:</p>
+                    {rules.map((rule, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${rule.valid ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-400"}`}>
+                          {rule.valid ? "✓" : "•"}
+                        </span>
+                        <span className={rule.valid ? "text-emerald-600 font-medium font-sans animate-fade-in" : "text-slate-500 font-sans"}>
+                          {rule.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Confirm Password Field (Only during signup) */}
