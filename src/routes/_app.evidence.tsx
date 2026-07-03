@@ -48,12 +48,18 @@ function EvidenceCardImage({
     zone === "warning" ? "text-yellow-400" : 
     "text-emerald-400";
 
+  // Check if imageUrl is a base64 image string without headers
+  const isBase64 = imageUrl && !imageUrl.startsWith("/") && !imageUrl.startsWith("http");
+  const imgSrc = isBase64 
+    ? (imageUrl.startsWith("data:") ? imageUrl : `data:image/jpeg;base64,${imageUrl}`)
+    : imageUrl;
+
   return (
     <div className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center">
       {/* Real-time photo backplate */}
-      {imageUrl ? (
+      {imgSrc ? (
         <img 
-          src={imageUrl} 
+          src={imgSrc} 
           alt="Camera Feed Snapshot" 
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           referrerPolicy="no-referrer"

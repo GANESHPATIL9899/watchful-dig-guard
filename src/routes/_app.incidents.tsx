@@ -67,7 +67,19 @@ function IncidentsPage() {
               <DialogHeader>
                 <DialogTitle className="font-mono">{sel.id} · {sel.alertType}</DialogTitle>
               </DialogHeader>
-              <img src={sel.imageUrl} alt="" className="w-full rounded-md border border-border" />
+              {(() => {
+                const isBase64 = sel.imageUrl && !sel.imageUrl.startsWith("/") && !sel.imageUrl.startsWith("http");
+                const imgSrc = isBase64 
+                  ? (sel.imageUrl.startsWith("data:") ? sel.imageUrl : `data:image/jpeg;base64,${sel.imageUrl}`)
+                  : sel.imageUrl;
+                return imgSrc ? (
+                  <img src={imgSrc} alt="" className="w-full rounded-md border border-border" />
+                ) : (
+                  <div className="w-full h-48 bg-slate-950 rounded-md border border-border flex items-center justify-center text-slate-500 font-mono text-xs">
+                    No image recorded
+                  </div>
+                );
+              })()}
               <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
                 <Field k="When" v={formatDateTime(sel.timestamp)} />
                 <Field k="Worker" v={`${sel.workerName} (${sel.workerId})`} />

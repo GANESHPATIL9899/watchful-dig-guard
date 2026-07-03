@@ -66,7 +66,15 @@ export default {
 
       if (pathname.startsWith("/assets/") || pathname.startsWith("/images/")) {
         const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, "");
-        const filePath = path.join(process.cwd(), "dist", "client", safePath);
+        let filePath = path.join(process.cwd(), "dist", "client", safePath);
+
+        // Fallback for /images/ to serve directly from public/images/ if not found in dist/client/
+        if (pathname.startsWith("/images/")) {
+          const fileExistsInDist = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+          if (!fileExistsInDist) {
+            filePath = path.join(process.cwd(), "public", safePath.replace(/^\/images/, "images"));
+          }
+        }
 
         try {
           if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
