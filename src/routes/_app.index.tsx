@@ -4,6 +4,7 @@ import { AppShell } from "@/components/common/AppShell";
 import { KpiCard } from "@/components/common/KpiCard";
 import { useDashboardKpis, useMachines, useAlerts, useIncidents } from "@/hooks/data";
 import { TrendChart } from "@/components/dashboard/TrendChart";
+import { env } from "@/config/environment";
 import { ShieldCheck, Camera, Activity, Cpu, Play, Pause, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -70,7 +71,7 @@ function DashboardPage() {
 
   // Check status on mount
   useEffect(() => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL.replace("/api", "");
+    const baseUrl = env.BASE_URL.replace("/api", "") || "";
     fetch(`${baseUrl}/api/simulation/status`)
       .then(res => res.json())
       .then(data => setSimRunning(!!data.running))
@@ -81,7 +82,7 @@ function DashboardPage() {
     setLoadingSim(true);
     try {
       const endpoint = simRunning ? "/api/simulation/stop" : "/api/simulation/start";
-      const baseUrl = import.meta.env.VITE_API_BASE_URL.replace("/api", "");
+      const baseUrl = env.BASE_URL.replace("/api", "") || "";
       const res = await fetch(`${baseUrl}${endpoint}`, { method: "POST" });
       const data = await res.json();
       setSimRunning(!!data.running);
