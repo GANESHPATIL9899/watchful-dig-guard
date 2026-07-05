@@ -53,7 +53,11 @@ function EvidenceCardImage({
       {/* Real-time photo backplate */}
       {imageUrl ? (
         <img 
-          src={imageUrl} 
+          src={
+            imageUrl.startsWith("/") || imageUrl.startsWith("http") || imageUrl.startsWith("data:")
+              ? imageUrl
+              : `data:image/jpeg;base64,${imageUrl}`
+          } 
           alt="Camera Feed Snapshot" 
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           referrerPolicy="no-referrer"
