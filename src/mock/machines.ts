@@ -12,17 +12,17 @@ export const machines: Machine[] = Array.from({ length: 12 }, (_, i) => {
   let nodes: any[] | undefined = undefined;
   if (id === "EX-2001") {
     nodes = [
-      { id: "node-1", name: "Node 1 (Front Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
-      { id: "node-2", name: "Node 2 (Rear Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
+      { id: "node-1", name: "Node 1 (Front Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg", latestHumanDetected: false },
+      { id: "node-2", name: "Node 2 (Rear Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg", latestHumanDetected: false },
     ];
   } else if (id === "EX-2002") {
     nodes = [
-      { id: "node-3", name: "Node 3 (Front Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
-      { id: "node-4", name: "Node 4 (Rear Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
+      { id: "node-3", name: "Node 3 (Front Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "/images/e38eb590-5b5c-482b-adec-9349471c3f74.jpeg", latestHumanDetected: false },
+      { id: "node-4", name: "Node 4 (Rear Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "/images/133e2b71-fd40-4552-9d32-c2c587e95ea1.jpeg", latestHumanDetected: false },
     ];
   } else if (id === "EX-2003") {
     nodes = [
-      { id: "node-5", name: "Node 5 (Primary Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false },
+      { id: "node-5", name: "Node 5 (Primary Unit)", cameraStatus: "online", lidarStatus: "online", latestLidarDistance: 8.0, latestCameraImage: "/images/431f5256-0b8b-45fa-90b3-388a11e6221c.jpeg", latestHumanDetected: false },
     ];
   }
 

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { AuthUser } from "@/types";
+import { env } from "@/config/environment";
+import { http } from "@/services/api/httpClient";
 
 interface AuthState {
   user: AuthUser | null;
@@ -16,44 +18,60 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       login: async (email, password) => {
-        await new Promise((r) => setTimeout(r, 400));
-        const normalizedEmail = email.toLowerCase().trim();
-        const storageKey = STORAGE_PREFIX + normalizedEmail;
-        
-        // Preload default supervisor account is removed for production security
+        if (!env.USE_MOCK) {
+          try {
+            const user = await http.post<AuthUser>("/auth/login", { email, password });
+            set({ user });
+            return user;
+          } catch (err: any) {
+            throw new Error(err.message || "Invalid email or password");
+          }
+        } else {
+          await new Promise((r) => setTimeout(r, 400));
+          const normalizedEmail = email.toLowerCase().trim();
+          const storageKey = STORAGE_PREFIX + normalizedEmail;
+          
+          const storedPassword = localStorage.getItem(storageKey);
+          
+          if (storedPassword === null || storedPassword !== password) {
+            throw new Error("Invalid email or password");
+          }
 
-        const storedPassword = localStorage.getItem(storageKey);
-        
-        if (storedPassword === null || storedPassword !== password) {
-          throw new Error("Invalid email or password");
+          const namePart = normalizedEmail.split("@")[0] || "Supervisor";
+          const user: AuthUser = {
+            id: "USR-001",
+            name: namePart.replace(/\b\w/g, (c) => c.toUpperCase()),
+            email: normalizedEmail,
+            role: "supervisor",
+          };
+          set({ user });
+          return user;
         }
-
-        const namePart = normalizedEmail.split("@")[0] || "Supervisor";
-        const user: AuthUser = {
-          id: "USR-001",
-          name: namePart.replace(/\b\w/g, (c) => c.toUpperCase()),
-          email: normalizedEmail,
-          role: "supervisor",
-        };
-        set({ user });
-        return user;
       },
       signup: async (email, password) => {
-        await new Promise((r) => setTimeout(r, 400));
         const normalizedEmail = email.toLowerCase().trim();
-        const storageKey = STORAGE_PREFIX + normalizedEmail;
-        
         const authorizedDomains = ["site.local", "authorized.com", "safety.gov", "gmail.com", "yahoo.com", "outlook.com"];
         const domain = normalizedEmail.split("@")[1];
         if (!domain || !authorizedDomains.includes(domain)) {
           throw new Error("Unauthorized email domain. Registration restricted to authorized personnel only.");
         }
 
-        if (localStorage.getItem(storageKey) !== null) {
-          throw new Error("Email already registered");
+        if (!env.USE_MOCK) {
+          try {
+            await http.post<void>("/auth/signup", { email, password });
+          } catch (err: any) {
+            throw new Error(err.message || "Registration failed");
+          }
+        } else {
+          await new Promise((r) => setTimeout(r, 400));
+          const storageKey = STORAGE_PREFIX + normalizedEmail;
+          
+          if (localStorage.getItem(storageKey) !== null) {
+            throw new Error("Email already registered");
+          }
+          
+          localStorage.setItem(storageKey, password);
         }
-        
-        localStorage.setItem(storageKey, password);
       },
       logout: () => set({ user: null }),
     }),
