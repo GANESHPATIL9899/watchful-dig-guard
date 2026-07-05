@@ -65,7 +65,7 @@ function ensureApiServer() {
   if (apiStarted) return;
   apiStarted = true;
   console.log("🚀 Spawning backend API server process...");
-  const scriptPath = path.resolve(process.cwd(), "dist", "api-server.js");
+  const scriptPath = path.resolve(process.cwd(), "dist", "api-server.cjs");
   const child = spawn("node", [scriptPath], {
     stdio: "inherit",
     shell: true,
@@ -117,7 +117,7 @@ export default {
 
       if (pathname.startsWith("/assets/") || pathname.startsWith("/images/")) {
         const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, "");
-        const rootDir = path.resolve(__dirname, "..", "..");
+        const rootDir = process.cwd();
         let filePath = path.join(rootDir, "dist", "client", safePath);
 
         // Fallback for /images/ to serve directly from public/images/ if not found in dist/client/
