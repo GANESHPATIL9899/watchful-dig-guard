@@ -58,11 +58,62 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+import { spawn } from "node:child_process";
+
+let apiStarted = false;
+function ensureApiServer() {
+  if (apiStarted) return;
+  apiStarted = true;
+  console.log("🚀 Spawning backend API server process...");
+  const scriptPath = path.resolve(process.cwd(), "dist", "api-server.js");
+  const child = spawn("node", [scriptPath], {
+    stdio: "inherit",
+    shell: true,
+    env: { ...process.env, PORT: "4000" }
+  });
+  child.on("error", (err) => {
+    console.error("❌ Failed to start API server child process:", err);
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    ensureApiServer();
     try {
       const url = new URL(request.url);
       const pathname = url.pathname;
+
+      if (pathname.startsWith("/api/")) {
+        const targetUrl = `http://localhost:4000${pathname}${url.search}`;
+        const headers: Record<string, string> = {};
+        request.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+
+        try {
+          const res = await fetch(targetUrl, {
+            method: request.method,
+            headers,
+            body: request.method !== "GET" && request.method !== "HEAD" ? await request.text() : undefined,
+          });
+          
+          const resHeaders: Record<string, string> = {};
+          res.headers.forEach((value, key) => {
+            resHeaders[key] = value;
+          });
+
+          return new Response(res.body, {
+            status: res.status,
+            headers: resHeaders,
+          });
+        } catch (err) {
+          console.error("❌ Proxy connection to backend API failed:", err);
+          return new Response(JSON.stringify({ error: "API server not reachable" }), {
+            status: 502,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
 
       if (pathname.startsWith("/assets/") || pathname.startsWith("/images/")) {
         const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, "");
