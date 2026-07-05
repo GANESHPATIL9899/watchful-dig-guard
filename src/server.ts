@@ -116,7 +116,8 @@ export default {
       }
 
       if (pathname.startsWith("/assets/") || pathname.startsWith("/images/")) {
-        const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, "");
+        const decodedPath = decodeURIComponent(pathname);
+        const safePath = path.normalize(decodedPath).replace(/^(\.\.[\/\\])+/, "");
         const rootDir = process.cwd();
         let filePath = path.join(rootDir, "dist", "client", safePath);
 
