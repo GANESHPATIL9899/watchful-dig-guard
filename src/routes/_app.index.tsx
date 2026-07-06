@@ -328,7 +328,7 @@ function DashboardPage() {
                       )}
 
                       {/* Bounding Boxes Overlay with PPE detection */}
-                      {detections.filter(d => d.class === "person").map((det, idx) => {
+                      {detections.filter(d => d.class === "person" && d.score >= 0.65).map((det, idx) => {
                         const img = document.getElementById("live-camera-feed-img") as HTMLImageElement;
                         if (!img || !img.naturalWidth || !img.naturalHeight) return null;
                         

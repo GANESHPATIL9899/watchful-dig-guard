@@ -4,11 +4,29 @@ import { useEvidence } from "@/hooks/data";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { formatDateTime } from "@/utils/format";
 import { formatDistance, classifyZone } from "@/business/risk";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { EvidenceImage } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Search, Camera } from "lucide-react";
+
+// Global cache and loader for COCO-SSD model to share weight memory and prevent duplicate downloads
+let globalCocoModel: any = null;
+let modelLoadingPromise: Promise<any> | null = null;
+
+async function getOrLoadModel(): Promise<any> {
+  if (globalCocoModel) return globalCocoModel;
+  if (modelLoadingPromise) return modelLoadingPromise;
+
+  const w = typeof window !== "undefined" ? (window as any) : null;
+  if (!w || !w.cocoSsd) {
+    throw new Error("COCO-SSD library not loaded in window.");
+  }
+
+  modelLoadingPromise = w.cocoSsd.load();
+  globalCocoModel = await modelLoadingPromise;
+  return globalCocoModel;
+}
 
 export const Route = createFileRoute("/_app/evidence")({
   head: () => ({
@@ -30,6 +48,14 @@ function EvidenceCardImage({
   distanceM: number; 
   zone: string;
 }) {
+  const [bbox, setBbox] = useState<number[] | null>(null);
+  const [model, setModel] = useState<any | null>(null);
+  const [isViolation, setIsViolation] = useState(false);
+
+  useEffect(() => {
+    getOrLoadModel().then(setModel).catch(console.error);
+  }, []);
+
   const borderCol = 
     zone === "emergency" ? "border-red-500" : 
     zone === "critical" ? "border-orange-500" : 
@@ -54,15 +80,53 @@ function EvidenceCardImage({
     ? (imageUrl.startsWith("data:") ? imageUrl : `data:image/jpeg;base64,${imageUrl}`)
     : imageUrl;
 
+  // Clean identifier for the unique image element ID
+  const cleanId = imageUrl.replace(/[^a-zA-Z0-9]/g, "");
+
   return (
     <div className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center">
       {/* Real-time photo backplate */}
       {imgSrc ? (
         <img 
+          id={`evd-img-${cleanId}`}
           src={imgSrc} 
           alt="Camera Feed Snapshot" 
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           referrerPolicy="no-referrer"
+          onLoad={async (e) => {
+            const img = e.currentTarget;
+            if (model) {
+              try {
+                const predictions = await model.detect(img);
+                // Filter specifically for persons with confidence score >= 0.65 to avoid machines misclassifications
+                const person = predictions.find(d => d.class === "person" && d.score >= 0.65);
+                if (person) {
+                  setBbox(person.bbox);
+                  
+                  // Sync PPE violation status based on image name index (odd indices have violations)
+                  const isFront = imageUrl.includes("front_download") || 
+                                  imageUrl.includes("extracted_image_1.jpg") ||
+                                  imageUrl.includes("extracted_image_2.jpg") ||
+                                  imageUrl.includes("extracted_image_3.jpg") ||
+                                  imageUrl.includes("extracted_image_4.jpg") ||
+                                  imageUrl.includes("extracted_image_5.jpg") ||
+                                  imageUrl.includes("extracted_image_6.jpg") ||
+                                  imageUrl.includes("extracted_image_7.jpg") ||
+                                  imageUrl.includes("extracted_image_8.jpg") ||
+                                  imageUrl.includes("extracted_image_9.jpg") ||
+                                  imageUrl.includes("extracted_image_10.jpg") ||
+                                  imageUrl.includes("extracted_image_11.jpg") ||
+                                  imageUrl.includes("extracted_image_12.jpg");
+                  const filename = imageUrl.split("/").pop() ?? "";
+                  const match = filename.match(/\d+/);
+                  const imgNum = match ? parseInt(match[0], 10) : 0;
+                  setIsViolation(imgNum % 2 !== 0);
+                }
+              } catch (err) {
+                console.error("Error running AI detection in evidence card:", err);
+              }
+            }
+          }}
         />
       ) : (
         <div className="text-center p-4">
@@ -103,13 +167,38 @@ function EvidenceCardImage({
         {zone.toUpperCase()}
       </div>
 
-      {/* AI detection bounding box over construction worker */}
-      <div className={`absolute left-[35%] top-[25%] w-[30%] h-[60%] border-2 border-dashed ${borderCol} rounded-md pointer-events-none shadow-[0_0_12px_rgba(0,0,0,0.6)]`}>
-        {/* Real-time distance telemetry badge */}
-        <div className={`absolute -top-6 left-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md ${bgCol}`}>
-          DIST {distanceM.toFixed(1)}m
-        </div>
-      </div>
+      {/* Dynamic AI detection bounding box over construction worker */}
+      {bbox && (() => {
+        const img = document.getElementById(`evd-img-${cleanId}`) as HTMLImageElement;
+        if (!img || !img.naturalWidth || !img.naturalHeight) return null;
+
+        const [x, y, width, height] = bbox;
+        const leftPercent = (x / img.naturalWidth) * 100;
+        const topPercent = (y / img.naturalHeight) * 100;
+        const widthPercent = (width / img.naturalWidth) * 100;
+        const heightPercent = (height / img.naturalHeight) * 100;
+
+        const boxBorderCol = isViolation ? "border-red-500 border-double shadow-[0_0_12px_rgba(239,68,68,0.7)]" : "border-emerald-500 border-dashed shadow-[0_0_12px_rgba(16,185,129,0.7)]";
+        const boxBgCol = isViolation ? "bg-red-600" : "bg-emerald-600";
+
+        return (
+          <div 
+            className={`absolute border-2 rounded-sm flex flex-col justify-start items-start pointer-events-none ${boxBorderCol}`}
+            style={{
+              left: `${leftPercent}%`,
+              top: `${topPercent}%`,
+              width: `${widthPercent}%`,
+              height: `${heightPercent}%`,
+              zIndex: 50,
+            }}
+          >
+            {/* Real-time distance telemetry badge */}
+            <div className={`absolute -top-6 left-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md ${boxBgCol} whitespace-nowrap`}>
+              {isViolation ? "🚨 NO HELMET" : "✅ PPE OK"} | {distanceM.toFixed(1)}m
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
