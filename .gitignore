@@ -31,9 +31,5 @@ dist-ssr
 *.sln
 *.sw?
 
-# Security: Ignore AWS certificates & keys
-certs/
-*.pem
-*.crt
-*.key
+
 
