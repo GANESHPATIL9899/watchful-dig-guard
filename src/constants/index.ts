@@ -1,10 +1,10 @@
 import type { ZoneStatus, Severity } from "@/types";
 
 export const ZONE_LABEL: Record<ZoneStatus, string> = {
-  safe: "Safe",
-  warning: "Warning",
-  critical: "Critical",
-  emergency: "Emergency Stop",
+  safe: "Safe Zone",
+  warning: "Warning Zone",
+  critical: "Danger Zone",
+  emergency: "Danger Zone (Stop)",
 };
 
 export const SEVERITY_LABEL: Record<Severity, string> = {
@@ -15,10 +15,10 @@ export const SEVERITY_LABEL: Record<Severity, string> = {
 };
 
 export const ZONE_THRESHOLDS_M = {
-  safe: 8, // > 8m
-  warning: 5, // 5-8m
-  critical: 2.5, // 2.5-5m
-  // < 2.5m → emergency
+  safe: 5.0,     // > 5m -> Safe Zone
+  warning: 3.0,  // 3m - 5m -> Warning Zone
+  critical: 1.5, // 1.5m - 3m -> Danger Zone
+  // < 1.5m -> Danger Zone (Stop)
 };
 
 export const ROUTES = {

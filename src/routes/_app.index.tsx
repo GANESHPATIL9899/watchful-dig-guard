@@ -229,7 +229,7 @@ function DashboardPage() {
             label="Lidar Sensor Distance" 
             value={`${node.latestLidarDistance.toFixed(2)} m`} 
             icon={Activity} 
-            tone={node.latestHumanDetected && node.latestLidarDistance < 1.5 ? "critical" : node.latestHumanDetected && node.latestLidarDistance < 3.0 ? "warning" : "safe"} 
+            tone={node.latestHumanDetected && node.latestLidarDistance < 3.0 ? "critical" : node.latestHumanDetected && node.latestLidarDistance < 5.0 ? "warning" : "safe"} 
           />
           {(() => {
             const isFrontNode = node.id === "node-1" || node.id === "node-3" || node.id === "node-5";
