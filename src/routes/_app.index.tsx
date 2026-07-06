@@ -11,6 +11,9 @@ import { Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 
 const FRONT_IMAGES = [
+  "/images/front_download_1.png",
+  "/images/front_download_2.png",
+  "/images/front_download_3.png",
   "/images/extracted_image_1.jpg",
   "/images/extracted_image_2.jpg",
   "/images/extracted_image_3.jpg",

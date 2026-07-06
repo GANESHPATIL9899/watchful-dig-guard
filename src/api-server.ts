@@ -494,6 +494,9 @@ function runSimulationStep() {
     if (!image || image === "NULL" || image === "none") {
       const isFrontNode = cfg.nodeId === "node-1" || cfg.nodeId === "node-3" || cfg.nodeId === "node-5";
       const frontImages = [
+        "/images/front_download_1.png",
+        "/images/front_download_2.png",
+        "/images/front_download_3.png",
         "/images/extracted_image_1.jpg",
         "/images/extracted_image_2.jpg",
         "/images/extracted_image_3.jpg",
