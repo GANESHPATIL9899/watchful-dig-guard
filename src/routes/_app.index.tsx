@@ -168,12 +168,21 @@ function DashboardPage() {
             icon={Activity} 
             tone={node.latestHumanDetected && node.latestLidarDistance < 1.5 ? "critical" : node.latestHumanDetected && node.latestLidarDistance < 3.0 ? "warning" : "safe"} 
           />
-          <KpiCard 
-            label="AI Safety Status" 
-            value={node.latestHumanDetected ? "🚨 Worker Near Machine" : "✅ Area Clear"} 
-            icon={ShieldCheck} 
-            tone={node.latestHumanDetected ? "critical" : "safe"} 
-          />
+          {(() => {
+            const hasPPEViolation = node.latestHumanDetected && (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
+            return (
+              <KpiCard 
+                label="AI Safety Status" 
+                value={
+                  node.latestHumanDetected 
+                    ? (hasPPEViolation ? "🚨 Worker: No PPE!" : "🚨 Worker: PPE OK") 
+                    : "✅ Area Clear"
+                } 
+                icon={ShieldCheck} 
+                tone={node.latestHumanDetected ? "critical" : "safe"} 
+              />
+            );
+          })()}
         </div>
       ) : (
         <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
@@ -191,7 +200,7 @@ function DashboardPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">{selectedMachineId} · {node.name}</p>
               </div>
-              <div className="flex-1 flex items-center justify-center p-4 bg-black/95">
+              <div className="flex-1 flex items-center justify-center p-4 bg-black/95 relative overflow-hidden">
                 {(() => {
                   const hasLiveImage = node.latestCameraImage && node.latestCameraImage !== "NULL" && node.latestCameraImage !== "none";
                   const imageUrl = hasLiveImage 
@@ -201,12 +210,50 @@ function DashboardPage() {
                         const charSum = (selectedMachineId + node.id).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
                         return DEMO_IMAGES[(charSum + distInt) % DEMO_IMAGES.length];
                       })();
+                  
+                  const hasPPEViolation = node.latestHumanDetected && (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
+                  const showBoundingBox = node.latestHumanDetected;
+
                   return (
-                    <img 
-                      src={imageUrl} 
-                      alt="AI Detection Snapshot" 
-                      className="max-h-[320px] object-contain rounded-sm border border-muted-foreground/20 shadow-lg"
-                    />
+                    <div className="relative max-h-[320px] aspect-video w-full max-w-[480px] overflow-hidden flex items-center justify-center rounded-sm border border-muted-foreground/20 shadow-lg">
+                      <img 
+                        src={imageUrl} 
+                        alt="AI Detection Snapshot" 
+                        className="h-full w-full object-cover"
+                      />
+                      
+                      {/* AI Bounding Box Overlay */}
+                      {showBoundingBox && (
+                        <>
+                          <div 
+                            className={`absolute left-[35%] top-[20%] w-[30%] h-[60%] border-2 rounded pointer-events-none transition-all duration-300 ${
+                              hasPPEViolation 
+                                ? "border-red-500 border-double shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-pulse" 
+                                : "border-emerald-500 border-dashed shadow-[0_0_12px_rgba(16,185,129,0.7)]"
+                            }`}
+                          >
+                            {/* Distance Tag */}
+                            <div className={`absolute -top-6 left-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md ${
+                              hasPPEViolation ? "bg-red-600" : "bg-emerald-600"
+                            }`}>
+                              DIST {node.latestLidarDistance.toFixed(2)}m
+                            </div>
+
+                            {/* PPE Status Tag */}
+                            <div className={`absolute -bottom-6 left-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md whitespace-nowrap ${
+                              hasPPEViolation ? "bg-red-600 animate-bounce" : "bg-emerald-600"
+                            }`}>
+                              {hasPPEViolation ? "🚨 NO HELMET" : "✅ PPE COMPLIANT"}
+                            </div>
+                          </div>
+
+                          {/* Scanner line scanning up and down */}
+                          <div className={`absolute left-0 w-full h-[1.5px] bg-gradient-to-r pointer-events-none opacity-40 top-0 animate-[scan_3s_ease-in-out_infinite] ${
+                            hasPPEViolation ? "from-red-500 via-red-400 to-red-500" : "from-emerald-500 via-emerald-400 to-emerald-500"
+                          }`} />
+                        </>
+                      )}
+                    </div>
                   );
                 })()}
               </div>
