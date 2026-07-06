@@ -195,7 +195,9 @@ function DashboardPage() {
                 {(() => {
                   const hasLiveImage = node.latestCameraImage && node.latestCameraImage !== "NULL" && node.latestCameraImage !== "none";
                   const imageUrl = hasLiveImage 
-                    ? (node.latestCameraImage.startsWith("data:") ? node.latestCameraImage : `data:image/jpeg;base64,${node.latestCameraImage}`)
+                    ? (node.latestCameraImage.startsWith("data:") || node.latestCameraImage.startsWith("/") || node.latestCameraImage.startsWith("http")
+                        ? node.latestCameraImage 
+                        : `data:image/jpeg;base64,${node.latestCameraImage}`)
                     : (() => {
                         const distInt = Math.floor(node.latestLidarDistance * 100);
                         const charSum = (selectedMachineId + node.id).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
