@@ -187,6 +187,30 @@ function pushTelemetry(
 //   const distanceM = Number((0.4 + Math.random() * 7.5).toFixed(2));
 //   pushTelemetry(machine.id, distanceM);
 // }, REFRESH_MS);
+function formatPemString(pemStr: string): string {
+  if (!pemStr) return "";
+  let trimmed = pemStr.trim();
+  if (trimmed.includes("\n")) {
+    return trimmed;
+  }
+  const beginMatch = trimmed.match(/(-----BEGIN [A-Z ]+-----)/);
+  const endMatch = trimmed.match(/(-----END [A-Z ]+-----)/);
+  if (beginMatch && endMatch) {
+    const beginHeader = beginMatch[0];
+    const endHeader = endMatch[0];
+    let body = trimmed
+      .replace(beginHeader, "")
+      .replace(endHeader, "")
+      .replace(/\s+/g, "");
+    const lines = [];
+    for (let i = 0; i < body.length; i += 64) {
+      lines.push(body.substring(i, i + 64));
+    }
+    return `${beginHeader}\n${lines.join("\n")}\n${endHeader}`;
+  }
+  return trimmed;
+}
+
 function startAwsIotClient() {
   const endpoint = process.env.AWS_IOT_ENDPOINT;
   const topic = process.env.AWS_IOT_TOPIC ?? "machine/05/#";
@@ -201,16 +225,19 @@ function startAwsIotClient() {
     const certsPath = path.join(process.cwd(), "certs");
     
     // Support loading certificate contents directly from environment variables (highly recommended for Render/Cloud hosts)
-    const keyContent = process.env.AWS_PRIVATE_KEY 
-      ? process.env.AWS_PRIVATE_KEY.replace(/\\n/g, "\n") 
+    const rawKey = process.env.AWS_PRIVATE_KEY;
+    const keyContent = rawKey 
+      ? formatPemString(rawKey.replace(/\\n/g, "\n")) 
       : fs.readFileSync(path.join(certsPath, "private.pem.key"));
 
-    const certContent = process.env.AWS_CERTIFICATE 
-      ? process.env.AWS_CERTIFICATE.replace(/\\n/g, "\n") 
+    const rawCert = process.env.AWS_CERTIFICATE;
+    const certContent = rawCert 
+      ? formatPemString(rawCert.replace(/\\n/g, "\n")) 
       : fs.readFileSync(path.join(certsPath, "certificate.pem.crt"));
 
-    const caContent = process.env.AWS_ROOT_CA 
-      ? process.env.AWS_ROOT_CA.replace(/\\n/g, "\n") 
+    const rawCa = process.env.AWS_ROOT_CA;
+    const caContent = rawCa 
+      ? formatPemString(rawCa.replace(/\\n/g, "\n")) 
       : fs.readFileSync(path.join(certsPath, "AmazonRootCA1.pem"));
 
     const options = {
