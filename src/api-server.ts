@@ -223,18 +223,27 @@ function startAwsIotClient() {
     
     // Support loading certificate contents directly from environment variables (highly recommended for Render/Cloud hosts)
     const rawKey = process.env.AWS_PRIVATE_KEY;
-    const keyContent = rawKey 
-      ? formatPemString(rawKey.replace(/\\n/g, "\n")) 
+    if (rawKey) {
+      console.log(`ℹ️ AWS_PRIVATE_KEY env var detected (length: ${rawKey.length}). Valid PEM: ${rawKey.includes("-----BEGIN")}`);
+    }
+    const keyContent = (rawKey && rawKey.includes("-----BEGIN"))
+      ? formatPemString(rawKey) 
       : fs.readFileSync(path.join(certsPath, "private.pem.key"));
 
     const rawCert = process.env.AWS_CERTIFICATE;
-    const certContent = rawCert 
-      ? formatPemString(rawCert.replace(/\\n/g, "\n")) 
+    if (rawCert) {
+      console.log(`ℹ️ AWS_CERTIFICATE env var detected (length: ${rawCert.length}). Valid PEM: ${rawCert.includes("-----BEGIN")}`);
+    }
+    const certContent = (rawCert && rawCert.includes("-----BEGIN"))
+      ? formatPemString(rawCert) 
       : fs.readFileSync(path.join(certsPath, "certificate.pem.crt"));
 
     const rawCa = process.env.AWS_ROOT_CA;
-    const caContent = rawCa 
-      ? formatPemString(rawCa.replace(/\\n/g, "\n")) 
+    if (rawCa) {
+      console.log(`ℹ️ AWS_ROOT_CA env var detected (length: ${rawCa.length}). Valid PEM: ${rawCa.includes("-----BEGIN")}`);
+    }
+    const caContent = (rawCa && rawCa.includes("-----BEGIN"))
+      ? formatPemString(rawCa) 
       : fs.readFileSync(path.join(certsPath, "AmazonRootCA1.pem"));
 
     const options = {
