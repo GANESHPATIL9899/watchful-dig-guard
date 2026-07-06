@@ -187,25 +187,28 @@ function pushTelemetry(
 //   const distanceM = Number((0.4 + Math.random() * 7.5).toFixed(2));
 //   pushTelemetry(machine.id, distanceM);
 // }, REFRESH_MS);
-function formatPemString(pemStr: string): string {
-  if (!pemStr) return "";
-  let cleaned = pemStr.replace(/\\n/g, "\n").trim();
-  const beginMatch = cleaned.match(/(-----BEGIN [A-Z0-9 ]+-----)/i);
-  const endMatch = cleaned.match(/(-----END [A-Z0-9 ]+-----)/i);
-  if (beginMatch && endMatch) {
-    const beginHeader = beginMatch[0];
-    const endHeader = endMatch[0];
-    let body = cleaned
-      .replace(beginHeader, "")
-      .replace(endHeader, "")
-      .replace(/[\r\n\s]+/g, "");
-    const lines = [];
-    for (let i = 0; i < body.length; i += 64) {
-      lines.push(body.substring(i, i + 64));
-    }
-    return `${beginHeader}\n${lines.join("\n")}\n${endHeader}`;
+function healPemString(rawStr: string, type: "key" | "cert"): string {
+  if (!rawStr) return "";
+  
+  let base64 = rawStr
+    .replace(/-----BEGIN [A-Z0-9 ]+-----/gi, "")
+    .replace(/-----END [A-Z0-9 ]+-----/gi, "")
+    .replace(/\\n/g, "")
+    .replace(/[\r\n\s\-]+/g, "");
+
+  const lines = [];
+  for (let i = 0; i < base64.length; i += 64) {
+    lines.push(base64.substring(i, i + 64));
   }
-  return cleaned;
+
+  const header = type === "key" 
+    ? "-----BEGIN RSA PRIVATE KEY-----" 
+    : "-----BEGIN CERTIFICATE-----";
+  const footer = type === "key" 
+    ? "-----END RSA PRIVATE KEY-----" 
+    : "-----END CERTIFICATE-----";
+
+  return `${header}\n${lines.join("\n")}\n${footer}`;
 }
 
 function startAwsIotClient() {
@@ -223,28 +226,47 @@ function startAwsIotClient() {
     
     // Support loading certificate contents directly from environment variables (highly recommended for Render/Cloud hosts)
     const rawKey = process.env.AWS_PRIVATE_KEY;
+    let keyContent: string | Buffer = "";
     if (rawKey) {
-      console.log(`ℹ️ AWS_PRIVATE_KEY env var detected (length: ${rawKey.length}). Valid PEM: ${rawKey.includes("-----BEGIN")}`);
+      console.log(`ℹ️ AWS_PRIVATE_KEY env var detected (length: ${rawKey.length}). Healing PEM...`);
+      keyContent = healPemString(rawKey, "key");
+    } else {
+      try {
+        keyContent = fs.readFileSync(path.join(certsPath, "private.pem.key"));
+      } catch (err: any) {
+        console.warn("⚠️ Could not load private.pem.key file from certs directory:", err.message);
+      }
     }
-    const keyContent = (rawKey && rawKey.includes("-----BEGIN"))
-      ? formatPemString(rawKey) 
-      : fs.readFileSync(path.join(certsPath, "private.pem.key"));
 
     const rawCert = process.env.AWS_CERTIFICATE;
+    let certContent: string | Buffer = "";
     if (rawCert) {
-      console.log(`ℹ️ AWS_CERTIFICATE env var detected (length: ${rawCert.length}). Valid PEM: ${rawCert.includes("-----BEGIN")}`);
+      console.log(`ℹ️ AWS_CERTIFICATE env var detected (length: ${rawCert.length}). Healing PEM...`);
+      certContent = healPemString(rawCert, "cert");
+    } else {
+      try {
+        certContent = fs.readFileSync(path.join(certsPath, "certificate.pem.crt"));
+      } catch (err: any) {
+        console.warn("⚠️ Could not load certificate.pem.crt file from certs directory:", err.message);
+      }
     }
-    const certContent = (rawCert && rawCert.includes("-----BEGIN"))
-      ? formatPemString(rawCert) 
-      : fs.readFileSync(path.join(certsPath, "certificate.pem.crt"));
 
     const rawCa = process.env.AWS_ROOT_CA;
+    let caContent: string | Buffer = "";
     if (rawCa) {
-      console.log(`ℹ️ AWS_ROOT_CA env var detected (length: ${rawCa.length}). Valid PEM: ${rawCa.includes("-----BEGIN")}`);
+      console.log(`ℹ️ AWS_ROOT_CA env var detected (length: ${rawCa.length}). Healing PEM...`);
+      caContent = healPemString(rawCa, "cert");
+    } else {
+      try {
+        caContent = fs.readFileSync(path.join(certsPath, "AmazonRootCA1.pem"));
+      } catch (err: any) {
+        console.warn("⚠️ Could not load AmazonRootCA1.pem file from certs directory:", err.message);
+      }
     }
-    const caContent = (rawCa && rawCa.includes("-----BEGIN"))
-      ? formatPemString(rawCa) 
-      : fs.readFileSync(path.join(certsPath, "AmazonRootCA1.pem"));
+
+    if (!keyContent || !certContent || !caContent) {
+      throw new Error("Missing required certificate or private key files/environment variables.");
+    }
 
     const options = {
       key: keyContent,
