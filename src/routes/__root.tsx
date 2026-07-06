@@ -86,6 +86,53 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('error', function(event) {
+                console.error("Caught global error:", event.error);
+                var errDiv = document.createElement('div');
+                errDiv.style.position = 'fixed';
+                errDiv.style.top = '0';
+                errDiv.style.left = '0';
+                errDiv.style.width = '100%';
+                errDiv.style.height = '100%';
+                errDiv.style.backgroundColor = '#f8fafc';
+                errDiv.style.color = '#0f172a';
+                errDiv.style.padding = '30px';
+                errDiv.style.zIndex = '999999';
+                errDiv.style.fontFamily = 'monospace';
+                errDiv.style.overflow = 'auto';
+                errDiv.style.whiteSpace = 'pre-wrap';
+                errDiv.innerHTML = '<h1 style="color: #e11d48; margin-top: 0; font-size: 20px;">⚠️ Client-Side Javascript Error Detected</h1>' +
+                  '<p><strong>Message:</strong> ' + event.message + '</p>' +
+                  '<p><strong>Filename:</strong> ' + event.filename + ':' + event.lineno + ':' + event.colno + '</p>' +
+                  '<pre style="background-color: #f1f5f9; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 10px;">' + (event.error ? event.error.stack : 'No stack trace available') + '</pre>';
+                document.body.appendChild(errDiv);
+              });
+              window.addEventListener('unhandledrejection', function(event) {
+                console.error("Caught unhandled rejection:", event.reason);
+                var errDiv = document.createElement('div');
+                errDiv.style.position = 'fixed';
+                errDiv.style.top = '0';
+                errDiv.style.left = '0';
+                errDiv.style.width = '100%';
+                errDiv.style.height = '100%';
+                errDiv.style.backgroundColor = '#f8fafc';
+                errDiv.style.color = '#0f172a';
+                errDiv.style.padding = '30px';
+                errDiv.style.zIndex = '999999';
+                errDiv.style.fontFamily = 'monospace';
+                errDiv.style.overflow = 'auto';
+                errDiv.style.whiteSpace = 'pre-wrap';
+                errDiv.innerHTML = '<h1 style="color: #e11d48; margin-top: 0; font-size: 20px;">⚠️ Unhandled Promise Rejection</h1>' +
+                  '<p><strong>Reason:</strong> ' + String(event.reason) + '</p>' +
+                  '<pre style="background-color: #f1f5f9; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 10px;">' + (event.reason && event.reason.stack ? event.reason.stack : 'No stack trace available') + '</pre>';
+                document.body.appendChild(errDiv);
+              });
+            `
+          }}
+        />
       </head>
       <body>
         {children}
