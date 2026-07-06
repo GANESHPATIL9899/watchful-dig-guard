@@ -10,15 +10,34 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 
-const DEMO_IMAGES = [
-  "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg",
-  "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
-  "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg",
-  "/images/e38eb590-5b5c-482b-adec-9349471c3f74.jpeg",
-  "/images/133e2b71-fd40-4552-9d32-c2c587e95ea1.jpeg",
-  "/images/431f5256-0b8b-45fa-90b3-388a11e6221c.jpeg",
-  "/images/4247bd78-7e89-4ca5-a730-7884ccb32342.jpeg",
-  "/images/a50bd700-a1f5-46ef-a900-5141af107163.jpeg"
+const FRONT_IMAGES = [
+  "/images/extracted_image_1.jpg",
+  "/images/extracted_image_2.jpg",
+  "/images/extracted_image_3.jpg",
+  "/images/extracted_image_4.jpg",
+  "/images/extracted_image_5.jpg",
+  "/images/extracted_image_6.jpg",
+  "/images/extracted_image_7.jpg",
+  "/images/extracted_image_8.jpg",
+  "/images/extracted_image_9.jpg",
+  "/images/extracted_image_10.jpg",
+  "/images/extracted_image_11.jpg",
+  "/images/extracted_image_12.jpg"
+];
+
+const REAR_IMAGES = [
+  "/images/extracted_image_13.jpg",
+  "/images/extracted_image_14.jpg",
+  "/images/extracted_image_15.jpg",
+  "/images/extracted_image_16.jpg",
+  "/images/extracted_image_17.jpg",
+  "/images/extracted_image_18.jpg",
+  "/images/extracted_image_19.jpg",
+  "/images/extracted_image_20.jpg",
+  "/images/extracted_image_21.jpg",
+  "/images/extracted_image_22.jpg",
+  "/images/extracted_image_23.jpg",
+  "/images/extracted_image_24.jpg"
 ];
 
 export const Route = createFileRoute("/_app/")({
@@ -207,7 +226,23 @@ function DashboardPage() {
             tone={node.latestHumanDetected && node.latestLidarDistance < 1.5 ? "critical" : node.latestHumanDetected && node.latestLidarDistance < 3.0 ? "warning" : "safe"} 
           />
           {(() => {
-            const hasPPEViolation = node.latestHumanDetected && (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
+            const isFrontNode = node.id === "node-1" || node.id === "node-3" || node.id === "node-5";
+            const nodeImages = isFrontNode ? FRONT_IMAGES : REAR_IMAGES;
+            
+            const hasLiveImage = node.latestCameraImage && node.latestCameraImage !== "NULL" && node.latestCameraImage !== "none";
+            const imageUrl = hasLiveImage 
+              ? (node.latestCameraImage.startsWith("data:") || node.latestCameraImage.startsWith("/") || node.latestCameraImage.startsWith("http")
+                  ? node.latestCameraImage 
+                  : `data:image/jpeg;base64,${node.latestCameraImage}`)
+              : (() => {
+                  const distInt = Math.floor(node.latestLidarDistance * 100);
+                  const charSum = (selectedMachineId + node.id).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                  return nodeImages[(charSum + distInt) % nodeImages.length];
+                })();
+
+            const imageIndex = nodeImages.indexOf(imageUrl);
+            const hasPPEViolation = node.latestHumanDetected && (imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0));
+
             return (
               <KpiCard 
                 label="AI Safety Status" 
@@ -240,6 +275,9 @@ function DashboardPage() {
               </div>
               <div className="flex-1 flex items-center justify-center p-4 bg-black/95 relative overflow-hidden">
                 {(() => {
+                  const isFrontNode = node.id === "node-1" || node.id === "node-3" || node.id === "node-5";
+                  const nodeImages = isFrontNode ? FRONT_IMAGES : REAR_IMAGES;
+
                   const hasLiveImage = node.latestCameraImage && node.latestCameraImage !== "NULL" && node.latestCameraImage !== "none";
                   const imageUrl = hasLiveImage 
                     ? (node.latestCameraImage.startsWith("data:") || node.latestCameraImage.startsWith("/") || node.latestCameraImage.startsWith("http")
@@ -248,10 +286,11 @@ function DashboardPage() {
                     : (() => {
                         const distInt = Math.floor(node.latestLidarDistance * 100);
                         const charSum = (selectedMachineId + node.id).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        return DEMO_IMAGES[(charSum + distInt) % DEMO_IMAGES.length];
+                        return nodeImages[(charSum + distInt) % nodeImages.length];
                       })();
                   
-                  const hasPPEViolation = node.latestHumanDetected && (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
+                  const imageIndex = nodeImages.indexOf(imageUrl);
+                  const hasPPEViolation = node.latestHumanDetected && (imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0));
                   const showBoundingBox = node.latestHumanDetected;
 
                   return (
@@ -291,14 +330,14 @@ function DashboardPage() {
                         const scaleY = img.clientHeight / img.naturalHeight;
                         const [x, y, width, height] = det.bbox;
 
-                        // Deterministic PPE check (cycles between compliant and non-compliant)
-                        const hasPPEViolation = (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
+                        // Deterministic PPE check based on imageIndex
+                        const isViolation = imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
 
                         return (
                           <div
                             key={idx}
                             className={`absolute border-2 rounded-sm flex flex-col justify-start items-start pointer-events-none transition-all duration-300 ${
-                              hasPPEViolation 
+                              isViolation 
                                 ? "border-red-500 border-double shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-pulse" 
                                 : "border-emerald-500 border-dashed shadow-[0_0_12px_rgba(16,185,129,0.7)]"
                             }`}
@@ -311,9 +350,9 @@ function DashboardPage() {
                             }}
                           >
                             <span className={`text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-br-sm -mt-0.5 -ml-0.5 uppercase tracking-wider whitespace-nowrap shadow-md ${
-                              hasPPEViolation ? "bg-red-600 animate-bounce" : "bg-emerald-600"
+                              isViolation ? "bg-red-600 animate-bounce" : "bg-emerald-600"
                             }`}>
-                              {hasPPEViolation ? "🚨 NO HELMET" : "✅ PPE OK"} ({Math.round(det.score * 100)}%)
+                              {isViolation ? "🚨 NO HELMET" : "✅ PPE OK"} ({Math.round(det.score * 100)}%)
                             </span>
                           </div>
                         );

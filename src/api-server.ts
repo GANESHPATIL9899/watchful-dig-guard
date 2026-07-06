@@ -492,17 +492,37 @@ function runSimulationStep() {
     const rotation = Number(row.cabin_rotation_deg ?? 0);
     let image = row.image_base64_preview ?? "";
     if (!image || image === "NULL" || image === "none") {
-      const dummyImages = [
-        "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg",
-        "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
-        "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg",
-        "/images/e38eb590-5b5c-482b-adec-9349471c3f74.jpeg",
-        "/images/133e2b71-fd40-4552-9d32-c2c587e95ea1.jpeg",
-        "/images/431f5256-0b8b-45fa-90b3-388a11e6221c.jpeg",
-        "/images/4247bd78-7e89-4ca5-a730-7884ccb32342.jpeg",
-        "/images/a50bd700-a1f5-46ef-a900-5141af107163.jpeg"
+      const isFrontNode = cfg.nodeId === "node-1" || cfg.nodeId === "node-3" || cfg.nodeId === "node-5";
+      const frontImages = [
+        "/images/extracted_image_1.jpg",
+        "/images/extracted_image_2.jpg",
+        "/images/extracted_image_3.jpg",
+        "/images/extracted_image_4.jpg",
+        "/images/extracted_image_5.jpg",
+        "/images/extracted_image_6.jpg",
+        "/images/extracted_image_7.jpg",
+        "/images/extracted_image_8.jpg",
+        "/images/extracted_image_9.jpg",
+        "/images/extracted_image_10.jpg",
+        "/images/extracted_image_11.jpg",
+        "/images/extracted_image_12.jpg"
       ];
-      image = dummyImages[Math.floor(Math.random() * dummyImages.length)];
+      const rearImages = [
+        "/images/extracted_image_13.jpg",
+        "/images/extracted_image_14.jpg",
+        "/images/extracted_image_15.jpg",
+        "/images/extracted_image_16.jpg",
+        "/images/extracted_image_17.jpg",
+        "/images/extracted_image_18.jpg",
+        "/images/extracted_image_19.jpg",
+        "/images/extracted_image_20.jpg",
+        "/images/extracted_image_21.jpg",
+        "/images/extracted_image_22.jpg",
+        "/images/extracted_image_23.jpg",
+        "/images/extracted_image_24.jpg"
+      ];
+      const nodeImages = isFrontNode ? frontImages : rearImages;
+      image = nodeImages[Math.floor(Math.random() * nodeImages.length)];
     }
 
     // Update nodes directly in local memory
