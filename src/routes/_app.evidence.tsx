@@ -75,9 +75,28 @@ function EvidenceCardImage({
       <div className={`absolute inset-0 border-2 ${borderCol} pointer-events-none opacity-60`} />
 
       {/* Top Left Feed Label HUD */}
-      <div className="absolute left-3 top-3 flex items-center gap-1 rounded bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold text-emerald-400 tracking-wider">
-        REAR CAM • IR
-      </div>
+      {(() => {
+        const isFront = imageUrl.includes("front_download") || 
+                        imageUrl.includes("extracted_image_1.jpg") ||
+                        imageUrl.includes("extracted_image_2.jpg") ||
+                        imageUrl.includes("extracted_image_3.jpg") ||
+                        imageUrl.includes("extracted_image_4.jpg") ||
+                        imageUrl.includes("extracted_image_5.jpg") ||
+                        imageUrl.includes("extracted_image_6.jpg") ||
+                        imageUrl.includes("extracted_image_7.jpg") ||
+                        imageUrl.includes("extracted_image_8.jpg") ||
+                        imageUrl.includes("extracted_image_9.jpg") ||
+                        imageUrl.includes("extracted_image_10.jpg") ||
+                        imageUrl.includes("extracted_image_11.jpg") ||
+                        imageUrl.includes("extracted_image_12.jpg");
+        const camLabel = isFront ? "FRONT CAM • HD" : "REAR CAM • IR";
+        const textHudCol = isFront ? "text-sky-400" : "text-emerald-400";
+        return (
+          <div className={`absolute left-3 top-3 flex items-center gap-1 rounded bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold ${textHudCol} tracking-wider`}>
+            {camLabel}
+          </div>
+        );
+      })()}
 
       {/* Top Right Status Badge HUD */}
       <div className={`absolute right-3 top-3 rounded bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold ${textCol} tracking-wider`}>
