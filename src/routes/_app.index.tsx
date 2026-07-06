@@ -264,32 +264,29 @@ function DashboardPage() {
                         }}
                       />
                       {/* Bounding Boxes Overlay */}
-                      {detections.map((det, idx) => {
+                      {detections.filter(d => d.class === "person").map((det, idx) => {
                         const img = document.getElementById("live-camera-feed-img") as HTMLImageElement;
                         if (!img) return null;
                         
                         const scaleX = img.clientWidth / img.naturalWidth;
                         const scaleY = img.clientHeight / img.naturalHeight;
                         const [x, y, width, height] = det.bbox;
-                        const isPerson = det.class === "person";
-                        const borderColor = isPerson ? "border-red-500" : "border-yellow-500";
-                        const bgColor = isPerson ? "bg-red-500" : "bg-yellow-500";
 
                         return (
                           <div
                             key={idx}
-                            className={`absolute border-2 ${borderColor} rounded-sm flex flex-col justify-start items-start pointer-events-none`}
+                            className="absolute border-2 border-red-500 rounded-sm flex flex-col justify-start items-start pointer-events-none"
                             style={{
                               left: `${x * scaleX}px`,
                               top: `${y * scaleY}px`,
                               width: `${width * scaleX}px`,
                               height: `${height * scaleY}px`,
                               zIndex: 50,
-                              boxShadow: isPerson ? '0 0 10px rgba(239, 68, 68, 0.5)' : '0 0 10px rgba(234, 179, 8, 0.5)'
+                              boxShadow: '0 0 10px rgba(239, 68, 68, 0.5)'
                             }}
                           >
-                            <span className={`text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-br-sm -mt-0.5 -ml-0.5 uppercase tracking-wider ${bgColor}`}>
-                              {det.class} {Math.round(det.score * 100)}%
+                            <span className="text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-br-sm -mt-0.5 -ml-0.5 uppercase tracking-wider bg-red-500">
+                              person {Math.round(det.score * 100)}%
                             </span>
                           </div>
                         );
