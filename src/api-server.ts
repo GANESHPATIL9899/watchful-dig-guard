@@ -189,26 +189,23 @@ function pushTelemetry(
 // }, REFRESH_MS);
 function formatPemString(pemStr: string): string {
   if (!pemStr) return "";
-  let trimmed = pemStr.trim();
-  if (trimmed.includes("\n")) {
-    return trimmed;
-  }
-  const beginMatch = trimmed.match(/(-----BEGIN [A-Z ]+-----)/);
-  const endMatch = trimmed.match(/(-----END [A-Z ]+-----)/);
+  let cleaned = pemStr.replace(/\\n/g, "\n").trim();
+  const beginMatch = cleaned.match(/(-----BEGIN [A-Z0-9 ]+-----)/i);
+  const endMatch = cleaned.match(/(-----END [A-Z0-9 ]+-----)/i);
   if (beginMatch && endMatch) {
     const beginHeader = beginMatch[0];
     const endHeader = endMatch[0];
-    let body = trimmed
+    let body = cleaned
       .replace(beginHeader, "")
       .replace(endHeader, "")
-      .replace(/\s+/g, "");
+      .replace(/[\r\n\s]+/g, "");
     const lines = [];
     for (let i = 0; i < body.length; i += 64) {
       lines.push(body.substring(i, i + 64));
     }
     return `${beginHeader}\n${lines.join("\n")}\n${endHeader}`;
   }
-  return trimmed;
+  return cleaned;
 }
 
 function startAwsIotClient() {
