@@ -46,6 +46,44 @@ function DashboardPage() {
   const { data: alerts = [] } = useAlerts();
   const { data: incidents = [] } = useIncidents();
 
+  const [cocoModel, setCocoModel] = useState<any>(null);
+  const [isModelLoading, setIsModelLoading] = useState<boolean>(false);
+  const [detections, setDetections] = useState<any[]>([]);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+
+  // Load COCO-SSD client-side human detector model once
+  useEffect(() => {
+    let active = true;
+    const checkInterval = setInterval(async () => {
+      if ((window as any).cocoSsd) {
+        clearInterval(checkInterval);
+        if (!active) return;
+        try {
+          setIsModelLoading(true);
+          const model = await (window as any).cocoSsd.load();
+          if (active) {
+            setCocoModel(model);
+            setIsModelLoading(false);
+            console.log("🤖 Client-side AI Human Detector loaded!");
+          }
+        } catch (err) {
+          console.error("Failed to load cocoSsd:", err);
+          if (active) setIsModelLoading(false);
+        }
+      }
+    }, 1000);
+
+    return () => {
+      active = false;
+      clearInterval(checkInterval);
+    };
+  }, []);
+
+  // Reset detections on selected node change
+  useEffect(() => {
+    setDetections([]);
+  }, [selectedNode]);
+
   // Sync search param selection
   useEffect(() => {
     if (initialNode) {
@@ -204,16 +242,80 @@ function DashboardPage() {
                         return DEMO_IMAGES[(charSum + distInt) % DEMO_IMAGES.length];
                       })();
                   return (
-                    <img 
-                      src={imageUrl} 
-                      alt="AI Detection Snapshot" 
-                      className="max-h-[320px] object-contain rounded-sm border border-muted-foreground/20 shadow-lg"
-                    />
+                    <div className="relative inline-block">
+                      <img 
+                        id="live-camera-feed-img"
+                        src={imageUrl} 
+                        alt="AI Detection Snapshot" 
+                        className="max-h-[320px] object-contain rounded-sm border border-muted-foreground/20 shadow-lg"
+                        onLoad={async (e) => {
+                          const img = e.currentTarget;
+                          if (cocoModel) {
+                            try {
+                              setIsScanning(true);
+                              const predictions = await cocoModel.detect(img);
+                              setDetections(predictions);
+                              setIsScanning(false);
+                            } catch (err) {
+                              console.error("Error running human detection:", err);
+                              setIsScanning(false);
+                            }
+                          }
+                        }}
+                      />
+                      {/* Bounding Boxes Overlay */}
+                      {detections.map((det, idx) => {
+                        const img = document.getElementById("live-camera-feed-img") as HTMLImageElement;
+                        if (!img) return null;
+                        
+                        const scaleX = img.clientWidth / img.naturalWidth;
+                        const scaleY = img.clientHeight / img.naturalHeight;
+                        const [x, y, width, height] = det.bbox;
+                        const isPerson = det.class === "person";
+                        const borderColor = isPerson ? "border-red-500" : "border-yellow-500";
+                        const bgColor = isPerson ? "bg-red-500" : "bg-yellow-500";
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`absolute border-2 ${borderColor} rounded-sm flex flex-col justify-start items-start pointer-events-none`}
+                            style={{
+                              left: `${x * scaleX}px`,
+                              top: `${y * scaleY}px`,
+                              width: `${width * scaleX}px`,
+                              height: `${height * scaleY}px`,
+                              zIndex: 50,
+                              boxShadow: isPerson ? '0 0 10px rgba(239, 68, 68, 0.5)' : '0 0 10px rgba(234, 179, 8, 0.5)'
+                            }}
+                          >
+                            <span className={`text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-br-sm -mt-0.5 -ml-0.5 uppercase tracking-wider ${bgColor}`}>
+                              {det.class} {Math.round(det.score * 100)}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   );
                 })()}
               </div>
               <div className="px-4 py-2 bg-muted/40 border-t border-border flex items-center justify-between text-xs">
-                <span className="font-semibold text-critical">⚠️ AI Detection Active</span>
+                {isModelLoading ? (
+                  <span className="text-yellow-400 flex items-center gap-1.5">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading AI Model...
+                  </span>
+                ) : isScanning ? (
+                  <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning Frame...
+                  </span>
+                ) : detections.some(d => d.class === "person") ? (
+                  <span className="font-bold text-red-500 animate-pulse flex items-center gap-1.5">
+                    ⚠️ PROXIMITY BREACH · HUMAN DETECTED
+                  </span>
+                ) : (
+                  <span className="text-emerald-500 font-medium flex items-center gap-1.5">
+                    ✓ AI Camera Active · Zone Clear
+                  </span>
+                )}
                 <span className="text-muted-foreground">Proximity: {node.latestLidarDistance.toFixed(2)}m</span>
               </div>
             </div>
