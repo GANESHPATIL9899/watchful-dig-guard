@@ -46,6 +46,44 @@ function DashboardPage() {
   const { data: alerts = [] } = useAlerts();
   const { data: incidents = [] } = useIncidents();
 
+  const [cocoModel, setCocoModel] = useState<any>(null);
+  const [isModelLoading, setIsModelLoading] = useState<boolean>(false);
+  const [detections, setDetections] = useState<any[]>([]);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+
+  // Load COCO-SSD client-side human detector model once
+  useEffect(() => {
+    let active = true;
+    const checkInterval = setInterval(async () => {
+      if ((window as any).cocoSsd) {
+        clearInterval(checkInterval);
+        if (!active) return;
+        try {
+          setIsModelLoading(true);
+          const model = await (window as any).cocoSsd.load();
+          if (active) {
+            setCocoModel(model);
+            setIsModelLoading(false);
+            console.log("🤖 Client-side AI Human Detector loaded!");
+          }
+        } catch (err) {
+          console.error("Failed to load cocoSsd:", err);
+          if (active) setIsModelLoading(false);
+        }
+      }
+    }, 1000);
+
+    return () => {
+      active = false;
+      clearInterval(checkInterval);
+    };
+  }, []);
+
+  // Reset detections on selected node change
+  useEffect(() => {
+    setDetections([]);
+  }, [selectedNode]);
+
   // Sync search param selection
   useEffect(() => {
     if (initialNode) {
@@ -204,7 +242,9 @@ function DashboardPage() {
                 {(() => {
                   const hasLiveImage = node.latestCameraImage && node.latestCameraImage !== "NULL" && node.latestCameraImage !== "none";
                   const imageUrl = hasLiveImage 
-                    ? (node.latestCameraImage.startsWith("data:") ? node.latestCameraImage : `data:image/jpeg;base64,${node.latestCameraImage}`)
+                    ? (node.latestCameraImage.startsWith("data:") || node.latestCameraImage.startsWith("/") || node.latestCameraImage.startsWith("http")
+                        ? node.latestCameraImage 
+                        : `data:image/jpeg;base64,${node.latestCameraImage}`)
                     : (() => {
                         const distInt = Math.floor(node.latestLidarDistance * 100);
                         const charSum = (selectedMachineId + node.id).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -215,50 +255,91 @@ function DashboardPage() {
                   const showBoundingBox = node.latestHumanDetected;
 
                   return (
-                    <div className="relative max-h-[320px] aspect-video w-full max-w-[480px] overflow-hidden flex items-center justify-center rounded-sm border border-muted-foreground/20 shadow-lg">
+                    <div className="relative inline-block overflow-hidden rounded-sm border border-muted-foreground/20 shadow-lg bg-black/50">
                       <img 
+                        id="live-camera-feed-img"
                         src={imageUrl} 
                         alt="AI Detection Snapshot" 
-                        className="h-full w-full object-cover"
+                        className="max-h-[320px] object-contain"
+                        onLoad={async (e) => {
+                          const img = e.currentTarget;
+                          if (cocoModel) {
+                            try {
+                              setIsScanning(true);
+                              const predictions = await cocoModel.detect(img);
+                              setDetections(predictions);
+                              setIsScanning(false);
+                            } catch (err) {
+                              console.error("Error running human detection:", err);
+                              setIsScanning(false);
+                            }
+                          }
+                        }}
                       />
-                      
-                      {/* AI Bounding Box Overlay */}
-                      {showBoundingBox && (
-                        <>
-                          <div 
-                            className={`absolute left-[35%] top-[20%] w-[30%] h-[60%] border-2 rounded pointer-events-none transition-all duration-300 ${
+
+                      {/* Scanner line scanning up and down */}
+                      {isScanning && (
+                        <div className="absolute left-0 w-full h-[1.5px] bg-gradient-to-r from-red-500 via-red-400 to-red-500 pointer-events-none opacity-40 top-0 animate-[scan_3s_ease-in-out_infinite]" />
+                      )}
+
+                      {/* Bounding Boxes Overlay with PPE detection */}
+                      {detections.filter(d => d.class === "person").map((det, idx) => {
+                        const img = document.getElementById("live-camera-feed-img") as HTMLImageElement;
+                        if (!img) return null;
+                        
+                        const scaleX = img.clientWidth / img.naturalWidth;
+                        const scaleY = img.clientHeight / img.naturalHeight;
+                        const [x, y, width, height] = det.bbox;
+
+                        // Deterministic PPE check (cycles between compliant and non-compliant)
+                        const hasPPEViolation = (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`absolute border-2 rounded-sm flex flex-col justify-start items-start pointer-events-none transition-all duration-300 ${
                               hasPPEViolation 
                                 ? "border-red-500 border-double shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-pulse" 
                                 : "border-emerald-500 border-dashed shadow-[0_0_12px_rgba(16,185,129,0.7)]"
                             }`}
+                            style={{
+                              left: `${x * scaleX}px`,
+                              top: `${y * scaleY}px`,
+                              width: `${width * scaleX}px`,
+                              height: `${height * scaleY}px`,
+                              zIndex: 50,
+                            }}
                           >
-                            {/* Distance Tag */}
-                            <div className={`absolute -top-6 left-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md ${
-                              hasPPEViolation ? "bg-red-600" : "bg-emerald-600"
-                            }`}>
-                              DIST {node.latestLidarDistance.toFixed(2)}m
-                            </div>
-
-                            {/* PPE Status Tag */}
-                            <div className={`absolute -bottom-6 left-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md whitespace-nowrap ${
+                            <span className={`text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-br-sm -mt-0.5 -ml-0.5 uppercase tracking-wider whitespace-nowrap shadow-md ${
                               hasPPEViolation ? "bg-red-600 animate-bounce" : "bg-emerald-600"
                             }`}>
-                              {hasPPEViolation ? "🚨 NO HELMET" : "✅ PPE COMPLIANT"}
-                            </div>
+                              {hasPPEViolation ? "🚨 NO HELMET" : "✅ PPE OK"} ({Math.round(det.score * 100)}%)
+                            </span>
                           </div>
-
-                          {/* Scanner line scanning up and down */}
-                          <div className={`absolute left-0 w-full h-[1.5px] bg-gradient-to-r pointer-events-none opacity-40 top-0 animate-[scan_3s_ease-in-out_infinite] ${
-                            hasPPEViolation ? "from-red-500 via-red-400 to-red-500" : "from-emerald-500 via-emerald-400 to-emerald-500"
-                          }`} />
-                        </>
-                      )}
+                        );
+                      })}
                     </div>
                   );
                 })()}
               </div>
               <div className="px-4 py-2 bg-muted/40 border-t border-border flex items-center justify-between text-xs">
-                <span className="font-semibold text-critical">⚠️ AI Detection Active</span>
+                {isModelLoading ? (
+                  <span className="text-yellow-400 flex items-center gap-1.5">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading AI Model...
+                  </span>
+                ) : isScanning ? (
+                  <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning Frame...
+                  </span>
+                ) : detections.some(d => d.class === "person") ? (
+                  <span className="font-bold text-red-500 animate-pulse flex items-center gap-1.5">
+                    ⚠️ PROXIMITY BREACH · HUMAN DETECTED
+                  </span>
+                ) : (
+                  <span className="text-emerald-500 font-medium flex items-center gap-1.5">
+                    ✓ AI Camera Active · Zone Clear
+                  </span>
+                )}
                 <span className="text-muted-foreground">Proximity: {node.latestLidarDistance.toFixed(2)}m</span>
               </div>
             </div>

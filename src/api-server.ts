@@ -437,8 +437,6 @@ function runSimulationStep() {
     const rotation = Number(row.cabin_rotation_deg ?? 0);
     let image = row.image_base64_preview ?? "";
     if (!image || image === "NULL" || image === "none") {
-      const charSum = (cfg.machineId + cfg.nodeId).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const distInt = Math.floor(dist * 100);
       const dummyImages = [
         "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg",
         "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
@@ -449,7 +447,7 @@ function runSimulationStep() {
         "/images/4247bd78-7e89-4ca5-a730-7884ccb32342.jpeg",
         "/images/a50bd700-a1f5-46ef-a900-5141af107163.jpeg"
       ];
-      image = dummyImages[(charSum + distInt) % dummyImages.length];
+      image = dummyImages[Math.floor(Math.random() * dummyImages.length)];
     }
 
     // Update nodes directly in local memory
