@@ -662,7 +662,7 @@ const server = http.createServer((req, res) => {
       // Check if user exists
       const users = loadUsers();
       if (users[emailLower]) {
-        return sendJson({ error: "Email already registered" }, 400);
+        return sendJson({ error: "Email already exists" }, 400);
       }
 
       // Save user

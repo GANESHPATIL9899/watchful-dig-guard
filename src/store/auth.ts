@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { AuthUser } from "@/types";
 import { env } from "@/config/environment";
 import { http } from "@/services/api/httpClient";
@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
           const storageKey = STORAGE_PREFIX + normalizedEmail;
           
           if (localStorage.getItem(storageKey) !== null) {
-            throw new Error("Email already registered");
+            throw new Error("Email already exists");
           }
           
           localStorage.setItem(storageKey, password);
@@ -75,6 +75,9 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: () => set({ user: null }),
     }),
-    { name: "ssh.auth" },
+    { 
+      name: "ssh.auth",
+      storage: createJSONStorage(() => sessionStorage),
+    },
   ),
 );
