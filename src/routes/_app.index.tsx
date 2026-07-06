@@ -29,6 +29,9 @@ const FRONT_IMAGES = [
 ];
 
 const REAR_IMAGES = [
+  "/images/rear_download_1.jpg",
+  "/images/rear_download_2.jpg",
+  "/images/rear_download_3.jpg",
   "/images/extracted_image_13.jpg",
   "/images/extracted_image_14.jpg",
   "/images/extracted_image_15.jpg",

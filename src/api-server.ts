@@ -511,6 +511,9 @@ function runSimulationStep() {
         "/images/extracted_image_12.jpg"
       ];
       const rearImages = [
+        "/images/rear_download_1.jpg",
+        "/images/rear_download_2.jpg",
+        "/images/rear_download_3.jpg",
         "/images/extracted_image_13.jpg",
         "/images/extracted_image_14.jpg",
         "/images/extracted_image_15.jpg",
