@@ -300,12 +300,12 @@ function DashboardPage() {
                   const showBoundingBox = node.latestHumanDetected;
 
                   return (
-                    <div className="relative inline-block overflow-hidden rounded-sm border border-muted-foreground/20 shadow-lg bg-black/50">
+                    <div className="relative inline-block overflow-hidden rounded-sm border border-muted-foreground/20 shadow-lg">
                       <img 
                         id="live-camera-feed-img"
                         src={imageUrl} 
                         alt="AI Detection Snapshot" 
-                        className="max-h-[320px] object-contain"
+                        className="max-h-[320px] w-auto block"
                         onLoad={async (e) => {
                           const img = e.currentTarget;
                           if (cocoModel) {
@@ -330,11 +330,13 @@ function DashboardPage() {
                       {/* Bounding Boxes Overlay with PPE detection */}
                       {detections.filter(d => d.class === "person").map((det, idx) => {
                         const img = document.getElementById("live-camera-feed-img") as HTMLImageElement;
-                        if (!img) return null;
+                        if (!img || !img.naturalWidth || !img.naturalHeight) return null;
                         
-                        const scaleX = img.clientWidth / img.naturalWidth;
-                        const scaleY = img.clientHeight / img.naturalHeight;
                         const [x, y, width, height] = det.bbox;
+                        const leftPercent = (x / img.naturalWidth) * 100;
+                        const topPercent = (y / img.naturalHeight) * 100;
+                        const widthPercent = (width / img.naturalWidth) * 100;
+                        const heightPercent = (height / img.naturalHeight) * 100;
 
                         // Deterministic PPE check based on imageIndex
                         const isViolation = imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
@@ -348,10 +350,10 @@ function DashboardPage() {
                                 : "border-emerald-500 border-dashed shadow-[0_0_12px_rgba(16,185,129,0.7)]"
                             }`}
                             style={{
-                              left: `${x * scaleX}px`,
-                              top: `${y * scaleY}px`,
-                              width: `${width * scaleX}px`,
-                              height: `${height * scaleY}px`,
+                              left: `${leftPercent}%`,
+                              top: `${topPercent}%`,
+                              width: `${widthPercent}%`,
+                              height: `${heightPercent}%`,
                               zIndex: 50,
                             }}
                           >
