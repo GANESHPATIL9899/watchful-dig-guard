@@ -68,45 +68,7 @@ function DashboardPage() {
   const { data: alerts = [] } = useAlerts();
   const { data: incidents = [] } = useIncidents();
 
-  const [cocoModel, setCocoModel] = useState<any>(null);
-  const [isModelLoading, setIsModelLoading] = useState<boolean>(false);
-  const [detections, setDetections] = useState<any[]>([]);
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const [actualHumanDetected, setActualHumanDetected] = useState<boolean>(false);
 
-  // Load COCO-SSD client-side human detector model once
-  useEffect(() => {
-    let active = true;
-    const checkInterval = setInterval(async () => {
-      if ((window as any).cocoSsd) {
-        clearInterval(checkInterval);
-        if (!active) return;
-        try {
-          setIsModelLoading(true);
-          const model = await (window as any).cocoSsd.load();
-          if (active) {
-            setCocoModel(model);
-            setIsModelLoading(false);
-            console.log("🤖 Client-side AI Human Detector loaded!");
-          }
-        } catch (err) {
-          console.error("Failed to load cocoSsd:", err);
-          if (active) setIsModelLoading(false);
-        }
-      }
-    }, 1000);
-
-    return () => {
-      active = false;
-      clearInterval(checkInterval);
-    };
-  }, []);
-
-  // Reset detections on selected node change
-  useEffect(() => {
-    setDetections([]);
-    setActualHumanDetected(false);
-  }, [selectedNode]);
 
   // Sync search param selection
   useEffect(() => {
@@ -127,12 +89,7 @@ function DashboardPage() {
     machine?.id === "EX-2003" || machine?.id === "07" || machine?.id === "MAC-03" ? { id: "node-5", name: "Node 5 (Primary Unit)", cameraStatus: "online" as const, lidarStatus: "online" as const, latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false } : undefined
   );
 
-  // Sync actualHumanDetected state with simulated database value initially
-  useEffect(() => {
-    if (node) {
-      setActualHumanDetected(node.latestHumanDetected);
-    }
-  }, [node?.id, node?.latestHumanDetected]);
+
 
   const checkPpeViolation = (imgUrl: string, idx: number, dist: number): boolean => {
     if (imgUrl.includes("front_download_1.jpg")) {
@@ -245,7 +202,7 @@ function DashboardPage() {
             label="Lidar Sensor Distance" 
             value={`${node.latestLidarDistance.toFixed(2)} m`} 
             icon={Activity} 
-            tone={actualHumanDetected && node.latestLidarDistance < 3.0 ? "critical" : actualHumanDetected && node.latestLidarDistance < 5.0 ? "warning" : "safe"} 
+            tone={node.latestHumanDetected && node.latestLidarDistance < 3.0 ? "critical" : node.latestHumanDetected && node.latestLidarDistance < 5.0 ? "warning" : "safe"} 
           />
           {(() => {
             const isFrontNode = node.id === "node-1" || node.id === "node-3" || node.id === "node-5";
@@ -263,18 +220,18 @@ function DashboardPage() {
                 })();
 
             const imageIndex = nodeImages.indexOf(imageUrl);
-            const hasPPEViolation = actualHumanDetected && checkPpeViolation(imageUrl, imageIndex, node.latestLidarDistance);
+            const hasPPEViolation = node.latestHumanDetected && checkPpeViolation(imageUrl, imageIndex, node.latestLidarDistance);
 
             return (
               <KpiCard 
                 label="AI Safety Status" 
                 value={
-                  actualHumanDetected 
+                  node.latestHumanDetected 
                     ? (hasPPEViolation ? "🚨 Worker: No PPE!" : "🚨 Worker: PPE OK") 
                     : "✅ Area Clear"
                 } 
                 icon={ShieldCheck} 
-                tone={actualHumanDetected ? "critical" : "safe"} 
+                tone={node.latestHumanDetected ? "critical" : "safe"} 
               />
             );
           })()}
@@ -295,7 +252,7 @@ function DashboardPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">{selectedMachineId} · {node.name}</p>
               </div>
-              <div className="flex-1 flex items-center justify-center p-4 bg-black/95 relative overflow-hidden">
+              <div className="flex-1 flex items-center justify-center p-4 bg-black/95 relative overflow-hidden min-h-[320px]">
                 {(() => {
                   const isFrontNode = node.id === "node-1" || node.id === "node-3" || node.id === "node-5";
                   const nodeImages = isFrontNode ? FRONT_IMAGES : REAR_IMAGES;
@@ -310,10 +267,19 @@ function DashboardPage() {
                         const charSum = (selectedMachineId + node.id).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
                         return nodeImages[(charSum + distInt) % nodeImages.length];
                       })();
-                  
-                  const imageIndex = nodeImages.indexOf(imageUrl);
-                  const hasPPEViolation = node.latestHumanDetected && (imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0));
-                  const showBoundingBox = node.latestHumanDetected;
+
+                  if (!node.latestHumanDetected) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-8 px-6 text-center text-emerald-400">
+                        <div className="relative mb-3">
+                          <ShieldCheck className="h-14 w-14 animate-[pulse_2s_infinite]" />
+                          <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-[ping_3s_infinite]" />
+                        </div>
+                        <h4 className="font-bold text-sm text-emerald-300">✅ Zone Clear</h4>
+                        <p className="text-[11px] text-muted-foreground mt-1 max-w-[220px]">No personnel detected within the proximity radius.</p>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div className="relative inline-block overflow-hidden rounded-sm border border-muted-foreground/20 shadow-lg">
@@ -321,86 +287,20 @@ function DashboardPage() {
                         id="live-camera-feed-img"
                         src={imageUrl} 
                         alt="AI Detection Snapshot" 
-                        className="max-h-[320px] w-auto block"
-                        onLoad={async (e) => {
-                          const img = e.currentTarget;
-                          if (cocoModel) {
-                            try {
-                              setIsScanning(true);
-                              const predictions = await cocoModel.detect(img);
-                              setDetections(predictions);
-                              setIsScanning(false);
-                            } catch (err) {
-                              console.error("Error running human detection:", err);
-                              setIsScanning(false);
-                            }
-                          }
-                        }}
+                        className="max-h-[320px] w-auto block rounded-sm"
                       />
-
-                      {/* Scanner line scanning up and down */}
-                      {isScanning && (
-                        <div className="absolute left-0 w-full h-[1.5px] bg-gradient-to-r from-red-500 via-red-400 to-red-500 pointer-events-none opacity-40 top-0 animate-[scan_3s_ease-in-out_infinite]" />
-                      )}
-
-                      {/* Bounding Boxes Overlay with PPE detection */}
-                      {detections.filter(d => d.class === "person" && d.score >= 0.65).map((det, idx) => {
-                        const img = document.getElementById("live-camera-feed-img") as HTMLImageElement;
-                        if (!img || !img.naturalWidth || !img.naturalHeight) return null;
-                        
-                        const [x, y, width, height] = det.bbox;
-                        const leftPercent = (x / img.naturalWidth) * 100;
-                        const topPercent = (y / img.naturalHeight) * 100;
-                        const widthPercent = (width / img.naturalWidth) * 100;
-                        const heightPercent = (height / img.naturalHeight) * 100;
-
-                        // Deterministic PPE check based on checkPpeViolation
-                        const isViolation = checkPpeViolation(imageUrl, imageIndex, node.latestLidarDistance);
-
-                        return (
-                          <div
-                            key={idx}
-                            className={`absolute border-2 rounded-sm flex flex-col justify-start items-start pointer-events-none transition-all duration-300 ${
-                              isViolation 
-                                ? "border-red-500 border-double shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-pulse" 
-                                : "border-emerald-500 border-dashed shadow-[0_0_12px_rgba(16,185,129,0.7)]"
-                            }`}
-                            style={{
-                              left: `${leftPercent}%`,
-                              top: `${topPercent}%`,
-                              width: `${widthPercent}%`,
-                              height: `${heightPercent}%`,
-                              zIndex: 50,
-                            }}
-                          >
-                            <span className={`text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-br-sm -mt-0.5 -ml-0.5 uppercase tracking-wider whitespace-nowrap shadow-md ${
-                              isViolation ? "bg-red-600 animate-bounce" : "bg-emerald-600"
-                            }`}>
-                              {isViolation ? "🚨 NO HELMET" : "✅ PPE OK"} ({Math.round(det.score * 100)}%)
-                            </span>
-                          </div>
-                        );
-                      })}
                     </div>
                   );
                 })()}
               </div>
               <div className="px-4 py-2 bg-muted/40 border-t border-border flex items-center justify-between text-xs">
-                {isModelLoading ? (
-                  <span className="text-yellow-400 flex items-center gap-1.5">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading AI Model...
-                  </span>
-                ) : isScanning ? (
-                  <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning Frame...
-                  </span>
-                ) : detections.some(d => d.class === "person") ? (
+                {node.latestHumanDetected ? (
                   <span className="font-bold text-red-500 animate-pulse flex items-center gap-1.5">
                     ⚠️ PROXIMITY BREACH · HUMAN DETECTED
                   </span>
                 ) : (
                   <span className="text-emerald-500 font-medium flex items-center gap-1.5">
-                    ✓ AI Camera Active · Zone Clear
+                    ✓ Camera Active · Zone Clear
                   </span>
                 )}
                 <span className="text-muted-foreground">Proximity: {node.latestLidarDistance.toFixed(2)}m</span>
