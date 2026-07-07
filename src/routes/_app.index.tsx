@@ -11,6 +11,9 @@ import { Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 
 const FRONT_IMAGES = [
+  "/images/front_download_1.jpg",
+  "/images/front_download_2.jpg",
+  "/images/front_download_3.jpg",
   "/images/extracted_image_1.jpg",
   "/images/extracted_image_2.jpg",
   "/images/extracted_image_3.jpg",
@@ -131,6 +134,16 @@ function DashboardPage() {
     }
   }, [node?.id, node?.latestHumanDetected]);
 
+  const checkPpeViolation = (imgUrl: string, idx: number, dist: number): boolean => {
+    if (imgUrl.includes("front_download_1.jpg")) {
+      return false; // Green (PPE OK)
+    }
+    if (imgUrl.includes("front_download_2.jpg") || imgUrl.includes("front_download_3.jpg")) {
+      return true;  // Red (No Helmet)
+    }
+    return idx !== -1 ? (idx % 2 !== 0) : (Math.floor(dist * 10) % 2 === 0);
+  };
+
   // Filter metrics
   const machineAlerts = alerts.filter(a => a.machineId === selectedMachineId && a.status === "active").length;
   const machineEstops = incidents.filter(i => i.machineId === selectedMachineId && i.emergencyStop).length;
@@ -250,7 +263,7 @@ function DashboardPage() {
                 })();
 
             const imageIndex = nodeImages.indexOf(imageUrl);
-            const hasPPEViolation = actualHumanDetected && (imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0));
+            const hasPPEViolation = actualHumanDetected && checkPpeViolation(imageUrl, imageIndex, node.latestLidarDistance);
 
             return (
               <KpiCard 
@@ -341,8 +354,8 @@ function DashboardPage() {
                         const widthPercent = (width / img.naturalWidth) * 100;
                         const heightPercent = (height / img.naturalHeight) * 100;
 
-                        // Deterministic PPE check based on imageIndex
-                        const isViolation = imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0);
+                        // Deterministic PPE check based on checkPpeViolation
+                        const isViolation = checkPpeViolation(imageUrl, imageIndex, node.latestLidarDistance);
 
                         return (
                           <div
