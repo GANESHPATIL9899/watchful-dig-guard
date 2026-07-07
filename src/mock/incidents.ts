@@ -14,8 +14,8 @@ const ACTIONS = [
 const ALERT_TYPES = ["Worker Near Machine", "Danger Zone Entry", "Blind Spot Breach", "Reverse Path Obstruction"];
 const RESOLUTIONS: Incident["resolutionStatus"][] = ["open", "investigating", "resolved"];
 
-// High-quality, real-time safety images representing actual workers and machinery on site
 const REAL_IMAGES = [
+  "/images/1000102951.jpg",
   "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg",
   "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
   "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg",

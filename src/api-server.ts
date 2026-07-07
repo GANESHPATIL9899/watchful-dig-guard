@@ -496,7 +496,7 @@ function runSimulationStep() {
       const frontImages = [
         "/images/front_download_1.jpg",
         "/images/front_download_2.jpg",
-        "/images/front_download_3.jpg",
+        "/images/1000102951.jpg",
         "/images/extracted_image_1.jpg",
         "/images/extracted_image_2.jpg",
         "/images/extracted_image_3.jpg",

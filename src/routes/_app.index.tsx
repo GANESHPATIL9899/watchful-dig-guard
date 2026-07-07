@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 const FRONT_IMAGES = [
   "/images/front_download_1.jpg",
   "/images/front_download_2.jpg",
-  "/images/front_download_3.jpg",
+  "/images/1000102951.jpg",
   "/images/extracted_image_1.jpg",
   "/images/extracted_image_2.jpg",
   "/images/extracted_image_3.jpg",
@@ -95,7 +95,7 @@ function DashboardPage() {
     if (imgUrl.includes("front_download_1.jpg")) {
       return false; // Green (PPE OK)
     }
-    if (imgUrl.includes("front_download_2.jpg") || imgUrl.includes("front_download_3.jpg")) {
+    if (imgUrl.includes("front_download_2.jpg") || imgUrl.includes("1000102951.jpg")) {
       return true;  // Red (No Helmet)
     }
     return idx !== -1 ? (idx % 2 !== 0) : (Math.floor(dist * 10) % 2 === 0);

@@ -123,6 +123,11 @@ function EvidencePage() {
                   <StatusBadge zone={zone} dot>{zone}</StatusBadge>
                 </div>
                 <p className="text-sm font-semibold">{e.alertType}</p>
+                {e.imageUrl.includes("1000102951") && (
+                  <span className="inline-flex items-center gap-1 rounded bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-400">
+                    🚨 PPE Violation: No Helmet
+                  </span>
+                )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="font-mono">{e.workerId} · {e.machineId}</span>
                   <span className="font-mono">{formatDistance(e.distanceM)}</span>
@@ -154,6 +159,7 @@ function EvidencePage() {
                 <Field k="Machine" v={<span className="font-mono">{selected.machineId}</span>} />
                 <Field k="Distance" v={<span className="font-mono">{formatDistance(selected.distanceM)}</span>} />
                 <Field k="Confidence" v={<span className="font-mono">{(selected.confidence * 100).toFixed(0)}%</span>} />
+                <Field k="PPE Status" v={selected.imageUrl.includes("1000102951") ? <span className="text-red-500 font-semibold">🚨 Violation: No Helmet</span> : <span className="text-emerald-500 font-semibold">✅ Compliant</span>} />
                 <Field k="Emergency Stop" v={<StatusBadge tone={selected.emergencyStop ? "critical" : "muted"}>{selected.emergencyStop ? "engaged" : "not triggered"}</StatusBadge>} />
               </dl>
               {selected.notes && <p className="text-sm text-muted-foreground">Notes: {selected.notes}</p>}
