@@ -94,6 +94,11 @@ function EvidencePage() {
                   <span className="font-mono text-xs text-muted-foreground">{e.id}</span>
                 </div>
                 <p className="text-sm font-semibold">{e.alertType}</p>
+                {e.imageUrl.includes("1000102951") && (
+                  <span className="inline-flex items-center gap-1 rounded bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-400">
+                    🚨 PPE Violation: No Helmet & PPE
+                  </span>
+                )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="font-mono">{e.workerId} · {e.machineId}</span>
                 </div>
@@ -123,6 +128,9 @@ function EvidencePage() {
                 <Field k="Worker" v={<span className="font-mono">{selected.workerId}</span>} />
                 <Field k="Machine" v={<span className="font-mono">{selected.machineId}</span>} />
                 <Field k="Confidence" v={<span className="font-mono">{(selected.confidence * 100).toFixed(0)}%</span>} />
+                {selected.imageUrl.includes("1000102951") && (
+                  <Field k="PPE Status" v={<span className="text-red-500 font-semibold">🚨 Violation: No Helmet & PPE</span>} />
+                )}
                 <Field k="Emergency Stop" v={<span className="font-semibold">{selected.emergencyStop ? "Engaged" : "Not triggered"}</span>} />
               </dl>
               {selected.notes && <p className="text-sm text-muted-foreground">Notes: {selected.notes}</p>}
