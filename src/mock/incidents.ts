@@ -19,16 +19,14 @@ const REAL_IMAGES = [
   "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
   "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg",
   "/images/e38eb590-5b5c-482b-adec-9349471c3f74.jpeg",
-  "/images/133e2b71-fd40-4552-9d32-c2c587e95ea1.jpeg",
   "/images/431f5256-0b8b-45fa-90b3-388a11e6221c.jpeg",
-  "/images/4247bd78-7e89-4ca5-a730-7884ccb32342.jpeg",
   "/images/a50bd700-a1f5-46ef-a900-5141af107163.jpeg"
 ];
 
 export const incidents: Incident[] = Array.from({ length: REAL_IMAGES.length }, (_, i) => {
   const w = workers[i % workers.length];
   const m = machines[i % machines.length];
-  const distanceM = Math.max(0.4, +(Math.abs(Math.sin(i * 1.7)) * 10).toFixed(2));
+  const distanceM = Math.max(0.4, +(Math.abs(Math.sin(i * 1.7)) * 4.5).toFixed(2));
   const zone = classifyZone(distanceM);
   const ts = new Date(Date.now() - i * 3600 * 1000 * 0.7).toISOString();
   return {

@@ -130,7 +130,6 @@ function EvidencePage() {
                 )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="font-mono">{e.workerId} · {e.machineId}</span>
-                  <span className="font-mono">{formatDistance(e.distanceM)}</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">{formatDateTime(e.capturedAt)}</p>
               </div>
@@ -157,7 +156,6 @@ function EvidencePage() {
                 <Field k="Captured" v={formatDateTime(selected.capturedAt)} />
                 <Field k="Worker" v={<span className="font-mono">{selected.workerId}</span>} />
                 <Field k="Machine" v={<span className="font-mono">{selected.machineId}</span>} />
-                <Field k="Distance" v={<span className="font-mono">{formatDistance(selected.distanceM)}</span>} />
                 <Field k="Confidence" v={<span className="font-mono">{(selected.confidence * 100).toFixed(0)}%</span>} />
                 <Field k="PPE Status" v={selected.imageUrl.includes("1000102951") ? <span className="text-red-500 font-semibold">🚨 Violation: No Helmet</span> : <span className="text-emerald-500 font-semibold">✅ Compliant</span>} />
                 <Field k="Emergency Stop" v={<StatusBadge tone={selected.emergencyStop ? "critical" : "muted"}>{selected.emergencyStop ? "engaged" : "not triggered"}</StatusBadge>} />
