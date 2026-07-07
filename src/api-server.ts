@@ -494,9 +494,6 @@ function runSimulationStep() {
     if (!image || image === "NULL" || image === "none") {
       const isFrontNode = cfg.nodeId === "node-1" || cfg.nodeId === "node-3" || cfg.nodeId === "node-5";
       const frontImages = [
-        "/images/front_download_1.png",
-        "/images/front_download_2.png",
-        "/images/front_download_3.png",
         "/images/extracted_image_1.jpg",
         "/images/extracted_image_2.jpg",
         "/images/extracted_image_3.jpg",
@@ -511,9 +508,6 @@ function runSimulationStep() {
         "/images/extracted_image_12.jpg"
       ];
       const rearImages = [
-        "/images/rear_download_1.jpg",
-        "/images/rear_download_2.jpg",
-        "/images/rear_download_3.jpg",
         "/images/extracted_image_13.jpg",
         "/images/extracted_image_14.jpg",
         "/images/extracted_image_15.jpg",

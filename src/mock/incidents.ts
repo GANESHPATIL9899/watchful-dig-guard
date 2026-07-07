@@ -16,12 +16,6 @@ const RESOLUTIONS: Incident["resolutionStatus"][] = ["open", "investigating", "r
 
 // High-quality, real-time safety images representing actual workers and machinery on site
 const REAL_IMAGES = [
-  "/images/front_download_1.png",
-  "/images/front_download_2.png",
-  "/images/front_download_3.png",
-  "/images/rear_download_1.jpg",
-  "/images/rear_download_2.jpg",
-  "/images/rear_download_3.jpg",
   "/images/02e78718-8fc6-42fb-87cb-184ca9a40038.jpeg",
   "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed (1).jpeg",
   "/images/3c7d313c-3bc9-48f5-ab59-9a7d90d120ed.jpeg",

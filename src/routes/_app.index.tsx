@@ -11,9 +11,6 @@ import { Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 
 const FRONT_IMAGES = [
-  "/images/front_download_1.png",
-  "/images/front_download_2.png",
-  "/images/front_download_3.png",
   "/images/extracted_image_1.jpg",
   "/images/extracted_image_2.jpg",
   "/images/extracted_image_3.jpg",
@@ -29,9 +26,6 @@ const FRONT_IMAGES = [
 ];
 
 const REAR_IMAGES = [
-  "/images/rear_download_1.jpg",
-  "/images/rear_download_2.jpg",
-  "/images/rear_download_3.jpg",
   "/images/extracted_image_13.jpg",
   "/images/extracted_image_14.jpg",
   "/images/extracted_image_15.jpg",
@@ -75,6 +69,7 @@ function DashboardPage() {
   const [isModelLoading, setIsModelLoading] = useState<boolean>(false);
   const [detections, setDetections] = useState<any[]>([]);
   const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [actualHumanDetected, setActualHumanDetected] = useState<boolean>(false);
 
   // Load COCO-SSD client-side human detector model once
   useEffect(() => {
@@ -107,6 +102,7 @@ function DashboardPage() {
   // Reset detections on selected node change
   useEffect(() => {
     setDetections([]);
+    setActualHumanDetected(false);
   }, [selectedNode]);
 
   // Sync search param selection
@@ -127,6 +123,13 @@ function DashboardPage() {
     machine?.id === "EX-2002" || machine?.id === "06" || machine?.id === "MAC-02" ? (selectedNodeType === "node-3" ? { id: "node-3", name: "Node 3 (Front Unit)", cameraStatus: "online" as const, lidarStatus: "online" as const, latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false } : { id: "node-4", name: "Node 4 (Rear Unit)", cameraStatus: "online" as const, lidarStatus: "online" as const, latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false }) :
     machine?.id === "EX-2003" || machine?.id === "07" || machine?.id === "MAC-03" ? { id: "node-5", name: "Node 5 (Primary Unit)", cameraStatus: "online" as const, lidarStatus: "online" as const, latestLidarDistance: 8.0, latestCameraImage: "", latestHumanDetected: false } : undefined
   );
+
+  // Sync actualHumanDetected state with simulated database value initially
+  useEffect(() => {
+    if (node) {
+      setActualHumanDetected(node.latestHumanDetected);
+    }
+  }, [node?.id, node?.latestHumanDetected]);
 
   // Filter metrics
   const machineAlerts = alerts.filter(a => a.machineId === selectedMachineId && a.status === "active").length;
@@ -229,7 +232,7 @@ function DashboardPage() {
             label="Lidar Sensor Distance" 
             value={`${node.latestLidarDistance.toFixed(2)} m`} 
             icon={Activity} 
-            tone={node.latestHumanDetected && node.latestLidarDistance < 3.0 ? "critical" : node.latestHumanDetected && node.latestLidarDistance < 5.0 ? "warning" : "safe"} 
+            tone={actualHumanDetected && node.latestLidarDistance < 3.0 ? "critical" : actualHumanDetected && node.latestLidarDistance < 5.0 ? "warning" : "safe"} 
           />
           {(() => {
             const isFrontNode = node.id === "node-1" || node.id === "node-3" || node.id === "node-5";
@@ -247,18 +250,18 @@ function DashboardPage() {
                 })();
 
             const imageIndex = nodeImages.indexOf(imageUrl);
-            const hasPPEViolation = node.latestHumanDetected && (imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0));
+            const hasPPEViolation = actualHumanDetected && (imageIndex !== -1 ? (imageIndex % 2 !== 0) : (Math.floor(node.latestLidarDistance * 10) % 2 === 0));
 
             return (
               <KpiCard 
                 label="AI Safety Status" 
                 value={
-                  node.latestHumanDetected 
+                  actualHumanDetected 
                     ? (hasPPEViolation ? "🚨 Worker: No PPE!" : "🚨 Worker: PPE OK") 
                     : "✅ Area Clear"
                 } 
                 icon={ShieldCheck} 
-                tone={node.latestHumanDetected ? "critical" : "safe"} 
+                tone={actualHumanDetected ? "critical" : "safe"} 
               />
             );
           })()}
