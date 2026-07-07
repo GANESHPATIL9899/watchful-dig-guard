@@ -20,7 +20,6 @@ export const Route = createFileRoute("/_app/evidence")({
   component: EvidencePage,
 });
 
-// Component to render a real construction site photo with AI bounding box & camera overlay HUD
 function EvidenceCardImage({ 
   imageUrl, 
   distanceM, 
@@ -30,24 +29,6 @@ function EvidenceCardImage({
   distanceM: number; 
   zone: string;
 }) {
-  const borderCol = 
-    zone === "emergency" ? "border-red-500" : 
-    zone === "critical" ? "border-orange-500" : 
-    zone === "warning" ? "border-yellow-500" : 
-    "border-emerald-500";
-
-  const bgCol = 
-    zone === "emergency" ? "bg-red-600" : 
-    zone === "critical" ? "bg-orange-600" : 
-    zone === "warning" ? "bg-yellow-600" : 
-    "bg-emerald-600";
-
-  const textCol = 
-    zone === "emergency" ? "text-red-400" : 
-    zone === "critical" ? "text-orange-400" : 
-    zone === "warning" ? "text-yellow-400" : 
-    "text-emerald-400";
-
   // Check if imageUrl is a base64 image string without headers
   const isBase64 = imageUrl && !imageUrl.startsWith("/") && !imageUrl.startsWith("http");
   const imgSrc = isBase64 
@@ -71,19 +52,10 @@ function EvidenceCardImage({
         </div>
       )}
 
-      {/* Screen HUD Border Overlay */}
-      <div className={`absolute inset-0 border-2 ${borderCol} pointer-events-none opacity-60`} />
-
       {/* Top Left Feed Label HUD */}
       <div className="absolute left-3 top-3 flex items-center gap-1 rounded bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold text-emerald-400 tracking-wider">
         FRONT CAM • HD
       </div>
-
-      {/* Top Right Status Badge HUD */}
-      <div className={`absolute right-3 top-3 rounded bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold ${textCol} tracking-wider`}>
-        {zone.toUpperCase()}
-      </div>
-
     </div>
   );
 }
@@ -120,14 +92,8 @@ function EvidencePage() {
               <div className="space-y-2 p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs text-muted-foreground">{e.id}</span>
-                  <StatusBadge zone={zone} dot>{zone}</StatusBadge>
                 </div>
                 <p className="text-sm font-semibold">{e.alertType}</p>
-                {e.imageUrl.includes("1000102951") && (
-                  <span className="inline-flex items-center gap-1 rounded bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-400">
-                    🚨 PPE Violation: No Helmet
-                  </span>
-                )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="font-mono">{e.workerId} · {e.machineId}</span>
                 </div>
@@ -157,8 +123,7 @@ function EvidencePage() {
                 <Field k="Worker" v={<span className="font-mono">{selected.workerId}</span>} />
                 <Field k="Machine" v={<span className="font-mono">{selected.machineId}</span>} />
                 <Field k="Confidence" v={<span className="font-mono">{(selected.confidence * 100).toFixed(0)}%</span>} />
-                <Field k="PPE Status" v={selected.imageUrl.includes("1000102951") ? <span className="text-red-500 font-semibold">🚨 Violation: No Helmet</span> : <span className="text-emerald-500 font-semibold">✅ Compliant</span>} />
-                <Field k="Emergency Stop" v={<StatusBadge tone={selected.emergencyStop ? "critical" : "muted"}>{selected.emergencyStop ? "engaged" : "not triggered"}</StatusBadge>} />
+                <Field k="Emergency Stop" v={<span className="font-semibold">{selected.emergencyStop ? "Engaged" : "Not triggered"}</span>} />
               </dl>
               {selected.notes && <p className="text-sm text-muted-foreground">Notes: {selected.notes}</p>}
             </>
