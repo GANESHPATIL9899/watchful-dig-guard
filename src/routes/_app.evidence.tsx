@@ -76,7 +76,7 @@ function EvidenceCardImage({
 
       {/* Top Left Feed Label HUD */}
       <div className="absolute left-3 top-3 flex items-center gap-1 rounded bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold text-emerald-400 tracking-wider">
-        REAR CAM • IR
+        FRONT CAM • HD
       </div>
 
       {/* Top Right Status Badge HUD */}
