@@ -84,13 +84,6 @@ function EvidenceCardImage({
         {zone.toUpperCase()}
       </div>
 
-      {/* AI detection bounding box over construction worker */}
-      <div className={`absolute left-[35%] top-[25%] w-[30%] h-[60%] border-2 border-dashed ${borderCol} rounded-md pointer-events-none shadow-[0_0_12px_rgba(0,0,0,0.6)]`}>
-        {/* Real-time distance telemetry badge */}
-        <div className={`absolute -top-6 left-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md ${bgCol}`}>
-          DIST {distanceM.toFixed(1)}m
-        </div>
-      </div>
     </div>
   );
 }
