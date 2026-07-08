@@ -20,18 +20,16 @@ export async function detectHuman(imageUrl: string) {
         },
       }
     );
-
+console.log(JSON.stringify(response.data, null, 2));
     const predictions =
       response.data?.outputs?.[0]?.predictions || [];
 
     // Keep only person predictions
     const humans = predictions.filter(
-      (p: any) =>
-        (p.class === "person" ||
-         p.class === "human" ||
-         p.class === "worker") &&
-        p.confidence >= 0.80   // 80% confidence
-    );
+  (p: any) =>
+    p.class === "person" &&
+    p.confidence >= 0.80
+);
 
     return {
       detected: humans.length > 0,
