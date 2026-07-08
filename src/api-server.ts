@@ -2,6 +2,7 @@ import mqtt from "mqtt";
 import fs from "fs";
 import path from "path";
 import http from "http";
+import {detectHuman} from "./roboflow";
 import { URL } from "url";
 import { alerts as seedAlerts } from "./mock/alerts";
 import { kpiSnapshot, trendDaily } from "./mock/dashboard";
@@ -374,11 +375,13 @@ function startAwsIotClient() {
         if (sensorType === "lidar") {
           node.latestLidarDistance = Number(payload.distance_m ?? 8.0);
           node.lidarStatus = payload.status ?? "online";
-        } else if (sensorType === "camera") {
-          node.latestHumanDetected = !!payload.human_detected;
-          node.latestCameraImage = (payload.image_base64_preview && payload.image_base64_preview !== "NULL" && payload.image_base64_preview !== "none")
-            ? payload.image_base64_preview
-            : node.latestCameraImage;
+        } 
+        else if (sensorType === "camera") {
+          // node.latestHumanDetected = !!payload.human_detected;
+          // node.latestCameraImage = (payload.image_base64_preview && payload.image_base64_preview !== "NULL" && payload.image_base64_preview !== "none")
+          //   ? payload.image_base64_preview
+          //   : node.latestCameraImage;
+          node.latestCameraImage = payload.image_url;
           node.cameraStatus = payload.status ?? "online";
         } else if (sensorType === "canbus") {
           machine.speedKph = Math.round(Number(payload.machine_speed_kmh ?? 0));
