@@ -7,7 +7,7 @@
     "dev": "vite dev --host",
     "api": "tsx src/api-server.ts",
     "start": "node node_modules/env-runner/dist/cli.mjs dist/server/server.js --port $PORT --host 0.0.0.0",
-    "build": "vite build && esbuild src/api-server.ts --bundle --platform=node --outfile=dist/api-server.cjs --external:mqtt --external:fs --external:path --external:http",
+    "build": "vite build && esbuild src/api-server.ts --bundle --platform=node --outfile=dist/api-server.cjs --external:mqtt --external:fs --external:path --external:http --external:axios",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
