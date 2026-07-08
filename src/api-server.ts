@@ -432,7 +432,7 @@ function startAwsIotClient() {
                 payload.timestamp || new Date().toISOString(),
                 undefined,
                 undefined,
-                payload.image_url }} node.latestCameraImage
+                payload.image_url || node.latestCameraImage
             );
 
         }
