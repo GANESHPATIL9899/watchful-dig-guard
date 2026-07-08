@@ -377,13 +377,13 @@ function startAwsIotClient() {
           node.lidarStatus = payload.status ?? "online";
         } 
         else if (sensorType === "camera") {
-          node.latestHumanDetected = !!payload.human_detected;
-          // node.latestCameraImage = (payload.image_base64_preview && payload.image_base64_preview !== "NULL" && payload.image_base64_preview !== "none")
-          //   ? payload.image_base64_preview
-          //   : node.latestCameraImage;
-          node.latestCameraImage = payload.image_url || node.latestCameraImage;
-          node.cameraStatus = payload.status ?? "online";
-        }
+
+    node.latestCameraImage =
+        payload.image_url || node.latestCameraImage;
+
+    node.cameraStatus =
+        payload.status ?? "online";
+}
         else if (sensorType === "canbus") {
           machine.speedKph = Math.round(Number(payload.machine_speed_kmh ?? 0));
           machine.status = payload.machine_state ?? "active";
@@ -402,43 +402,28 @@ function startAwsIotClient() {
           }
         }
 
-      if (sensorType === "lidar" || sensorType === "camera") {
+     if (sensorType === "lidar" || sensorType === "camera") {
 
-    // If this is a camera message and an S3 image URL is available,
-    // send the image to Roboflow.
-    if (
-        sensorType === "camera" &&
-        payload.image_url
-      // && payload.image_url.startsWith("http")
-    ) {
+    // If an image URL exists, send it to Roboflow
+    if (sensorType === "camera" && payload.image_url) {
 
         const result = await detectHuman(payload.image_url);
 
-        
-
-        node.latestHumanDetected = result.detected;
         console.log("Roboflow Result:", result);
 
-        // if (result.detected) {
-
-        //     console.log(
-        //         `Human detected (${(result.confidence * 100).toFixed(1)}%)`
-        //     );
+        node.latestHumanDetected = result.detected;
     }
-            pushTelemetry(
-                machineId,
-                node.latestLidarDistance ? node.latestLidarDistance
-            : 8.0,
-                payload.timestamp || new Date().toISOString(),
-                undefined,
-                undefined,
-                payload.image_url || node.latestCameraImage
-            );
 
-        }
-
-    
-
+    // Send latest data to dashboard
+    pushTelemetry(
+        machineId,
+        node.latestLidarDistance ?? 8.0,
+        payload.timestamp || new Date().toISOString(),
+        undefined,
+        undefined,
+        payload.image_url || node.latestCameraImage,
+        nodeId
+    );
 }
       } catch (err) {
         console.error("⚠️ Failed to parse message payload JSON:", message.toString(), err);
