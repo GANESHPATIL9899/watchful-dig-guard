@@ -292,7 +292,7 @@ function startAwsIotClient() {
       });
     });
 
-    client.on("message", (topicName, message) => {
+    client.on("message", async (topicName, message) => {
       try {
         const payload = JSON.parse(message.toString());
         console.log(`📥 Received MQTT [${topicName}]:`, payload);
