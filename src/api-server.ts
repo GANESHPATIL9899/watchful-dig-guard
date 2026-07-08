@@ -377,39 +377,69 @@ function startAwsIotClient() {
           node.lidarStatus = payload.status ?? "online";
         } 
         else if (sensorType === "camera") {
-          // node.latestHumanDetected = !!payload.human_detected;
+          node.latestHumanDetected = !!payload.human_detected;
           // node.latestCameraImage = (payload.image_base64_preview && payload.image_base64_preview !== "NULL" && payload.image_base64_preview !== "none")
           //   ? payload.image_base64_preview
           //   : node.latestCameraImage;
-          node.latestCameraImage = payload.image_url;
+          node.latestCameraImage = payload.image_url || node.latestCameraImage;
           node.cameraStatus = payload.status ?? "online";
-        } else if (sensorType === "canbus") {
+        }
+        else if (sensorType === "canbus") {
           machine.speedKph = Math.round(Number(payload.machine_speed_kmh ?? 0));
           machine.status = payload.machine_state ?? "active";
-        } else if (sensorType === "gps") {
+        }
+        else if (sensorType === "gps") {
           const lat = Number(payload.lat ?? payload.latitude);
           const lng = Number(payload.lng ?? payload.longitude);
           if (!isNaN(lat) && !isNaN(lng)) {
             machine.gps = { lat, lng };
           }
-        } else if (sensorType === "health") {
+        } 
+        else if (sensorType === "health") {
           const score = Number(payload.health_score ?? payload.score);
           if (!isNaN(score)) {
             machine.healthScore = score;
           }
         }
 
-        if (sensorType === "lidar" || sensorType === "camera") {
-          // Push telemetry when either sensor updates
-          pushTelemetry(
-            machineId,
-            node.latestHumanDetected ? node.latestLidarDistance : 8.0, 
-            payload.timestamp || new Date().toISOString(),
-            undefined, 
-            undefined, 
-            node.latestCameraImage
-          );
+      if (sensorType === "lidar" || sensorType === "camera") {
+
+    // If this is a camera message and an S3 image URL is available,
+    // send the image to Roboflow.
+    if (
+        sensorType === "camera" &&
+        payload.image_url
+      // && payload.image_url.startsWith("http")
+    ) {
+
+        const result = await detectHuman(payload.image_url);
+
+        
+
+        node.latestHumanDetected = result.detected;
+        console.log("Roboflow Result:", result);
+
+        // if (result.detected) {
+
+        //     console.log(
+        //         `Human detected (${(result.confidence * 100).toFixed(1)}%)`
+        //     );
+    }
+            pushTelemetry(
+                machineId,
+                node.latestLidarDistance ? node.latestLidarDistance
+            : 8.0,
+                payload.timestamp || new Date().toISOString(),
+                undefined,
+                undefined,
+                payload.image_url }} node.latestCameraImage
+            );
+
         }
+
+    
+
+}
       } catch (err) {
         console.error("⚠️ Failed to parse message payload JSON:", message.toString(), err);
       }
