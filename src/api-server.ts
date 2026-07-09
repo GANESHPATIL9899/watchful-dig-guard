@@ -777,10 +777,26 @@ const server = http.createServer((req, res) => {
           result = await detectHuman(base64Image, true);
         }
 
-        // Map incoming nodeId N001/node-1 to node-1, otherwise node-2/etc.
-        const targetNodeId = (nodeId === "N001" || nodeId === "node-1") ? "node-1" :
-                             (nodeId === "node-2") ? "node-2" : "node-1";
-        const machineId = "EX-2001"; // Map to the primary excavator used in dashboard
+        // Map incoming nodeId dynamically to machine and node configurations
+        let targetNodeId = "node-1";
+        let machineId = "EX-2001";
+
+        if (nodeId === "N001" || nodeId === "node-1") {
+          targetNodeId = "node-1";
+          machineId = "EX-2001";
+        } else if (nodeId === "N002" || nodeId === "node-2") {
+          targetNodeId = "node-2";
+          machineId = "EX-2001";
+        } else if (nodeId === "N003" || nodeId === "node-3") {
+          targetNodeId = "node-3";
+          machineId = "EX-2002";
+        } else if (nodeId === "N004" || nodeId === "node-4") {
+          targetNodeId = "node-4";
+          machineId = "EX-2002";
+        } else if (nodeId === "N005" || nodeId === "node-5") {
+          targetNodeId = "node-5";
+          machineId = "EX-2003";
+        }
 
         // Update active machine node details
         const machine = machines.find((m) => m.id === machineId);
