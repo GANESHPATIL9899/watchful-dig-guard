@@ -84,6 +84,19 @@ export default {
       const pathname = url.pathname;
 
       if (pathname.startsWith("/api/")) {
+        // Handle preflight OPTIONS requests directly
+        if (request.method === "OPTIONS") {
+          return new Response(null, {
+            status: 204,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+              "Access-Control-Max-Age": "86400",
+            },
+          });
+        }
+
         const targetUrl = `http://localhost:4000${pathname}${url.search}`;
         const headers: Record<string, string> = {};
         request.headers.forEach((value, key) => {
@@ -102,6 +115,11 @@ export default {
             resHeaders[key] = value;
           });
 
+          // Force allow CORS origins
+          resHeaders["Access-Control-Allow-Origin"] = "*";
+          resHeaders["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+          resHeaders["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+
           return new Response(res.body, {
             status: res.status,
             headers: resHeaders,
@@ -110,7 +128,12 @@ export default {
           console.error("❌ Proxy connection to backend API failed:", err);
           return new Response(JSON.stringify({ error: "API server not reachable" }), {
             status: 502,
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
           });
         }
       }
