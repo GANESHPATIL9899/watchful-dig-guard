@@ -107,7 +107,7 @@ export default {
           const res = await fetch(targetUrl, {
             method: request.method,
             headers,
-            body: request.method !== "GET" && request.method !== "HEAD" ? await request.text() : undefined,
+            body: request.method !== "GET" && request.method !== "HEAD" ? await request.arrayBuffer() : undefined,
           });
           
           const resHeaders: Record<string, string> = {};

@@ -5,8 +5,8 @@ const API_KEY = process.env.ROBOFLOW_API_KEY!;
 const WORKSPACE = process.env.ROBOFLOW_WORKSPACE!;
 const WORKFLOW = process.env.ROBOFLOW_WORKFLOW_ID!;
 
-// Detect only humans
-export async function detectHuman(imageUrl: string) {
+// Detect only humans (supporting both S3 URL and Base64 source)
+export async function detectHuman(imageSource: string, isBase64 = false) {
   try {
     const response = await axios.post(
       `${ROBOFLOW_URL}/infer/workflows/${WORKSPACE}/${WORKFLOW}`,
@@ -14,22 +14,20 @@ export async function detectHuman(imageUrl: string) {
         api_key: API_KEY,
         inputs: {
           image: {
-            type: "url",
-            value: imageUrl,
+            type: isBase64 ? "base64" : "url",
+            value: imageSource,
           },
         },
       }
     );
-console.log(JSON.stringify(response.data, null, 2));
+    console.log(JSON.stringify(response.data, null, 2));
     const predictions =
       response.data?.outputs?.[0]?.predictions || [];
 
     // Keep only person predictions
     const humans = predictions.filter(
-  (p: any) =>
-    p.class === "person" &&
-    p.confidence >= 0.80
-);
+      (p: any) => p.class === "person" && p.confidence >= 0.80
+    );
 
     return {
       detected: humans.length > 0,

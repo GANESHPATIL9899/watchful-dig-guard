@@ -644,6 +644,68 @@ function stopSimulation() {
   console.log("⏸️ Background Simulation Stopped.");
 }
 
+function handleBinaryPost(req: http.IncomingMessage, handler: (body: Buffer) => void, onError: (err: Error) => void) {
+  const chunks: Buffer[] = [];
+  req.on("data", (chunk) => chunks.push(chunk));
+  req.on("end", () => {
+    try {
+      handler(Buffer.concat(chunks));
+    } catch (err: any) {
+      onError(err);
+    }
+  });
+}
+
+function splitBuffer(buffer: Buffer, delimiter: Buffer): Buffer[] {
+  const parts: Buffer[] = [];
+  let index = 0;
+  
+  while (true) {
+    const found = buffer.indexOf(delimiter, index);
+    if (found === -1) {
+      parts.push(buffer.subarray(index));
+      break;
+    }
+    if (found > index) {
+      parts.push(buffer.subarray(index, found));
+    }
+    index = found + delimiter.length;
+  }
+  
+  return parts;
+}
+
+function parseMultipart(buffer: Buffer, boundary: string) {
+  const boundaryStr = `--${boundary}`;
+  const parts = splitBuffer(buffer, Buffer.from(boundaryStr));
+  
+  let nodeId = "";
+  let lidarDistM = 0;
+  let timestamp = "";
+  let imageBuffer: Buffer | null = null;
+
+  parts.forEach(part => {
+    const headerEnd = part.indexOf("\r\n\r\n");
+    if (headerEnd === -1) return;
+    
+    const header = part.subarray(0, headerEnd).toString("utf-8");
+    const body = part.subarray(headerEnd + 4);
+
+    if (header.includes('name="node_id"')) {
+      nodeId = body.toString("utf-8").trim();
+    } else if (header.includes('name="lidar_dist_m"')) {
+      lidarDistM = parseFloat(body.toString("utf-8").trim());
+    } else if (header.includes('name="timestamp"')) {
+      timestamp = body.toString("utf-8").trim();
+    } else if (header.includes('name="image"')) {
+      // The image body ends with a trailing \r\n (2 bytes)
+      imageBuffer = body.subarray(0, body.length - 2);
+    }
+  });
+
+  return { nodeId, lidarDistM, timestamp, imageBuffer };
+}
+
 // Create a standard Node.js HTTP server to ensure 100% compatibility on Render without Bun
 const server = http.createServer((req, res) => {
   const url = new URL(req.url ?? "", `http://${req.headers.host || "localhost"}`);
@@ -690,6 +752,69 @@ const server = http.createServer((req, res) => {
   if (req.method === "POST" && path === "/api/simulation/stop") {
     stopSimulation();
     sendJson({ ok: true, running: false });
+    return;
+  }
+
+  if (req.method === "POST" && path === "/api/ingest/detection") {
+    const contentType = req.headers["content-type"] || "";
+    let boundary = "RailOpticBound7x"; // Default fallback
+    const match = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+    if (match) {
+      boundary = match[1] || match[2];
+    }
+
+    handleBinaryPost(req, async (bodyBuffer) => {
+      try {
+        const { nodeId, lidarDistM, timestamp, imageBuffer } = parseMultipart(bodyBuffer, boundary);
+        
+        console.log(`[Ingest API] Received detection from Node: ${nodeId}, Lidar: ${lidarDistM}m`);
+        
+        let base64Image = "";
+        let result = { detected: false, confidence: 0 };
+
+        if (imageBuffer && imageBuffer.length > 0) {
+          base64Image = imageBuffer.toString("base64");
+          result = await detectHuman(base64Image, true);
+        }
+
+        // Map incoming nodeId N001/node-1 to node-1, otherwise node-2/etc.
+        const targetNodeId = (nodeId === "N001" || nodeId === "node-1") ? "node-1" :
+                             (nodeId === "node-2") ? "node-2" : "node-1";
+        const machineId = "EX-2001"; // Map to the primary excavator used in dashboard
+
+        // Update active machine node details
+        const machine = machines.find((m) => m.id === machineId);
+        if (machine) {
+          if (!machine.nodes) machine.nodes = [];
+          let node = machine.nodes.find((n) => n.id === targetNodeId);
+          if (node) {
+            node.latestLidarDistance = Number(lidarDistM.toFixed(2));
+            node.latestHumanDetected = result.detected;
+            if (base64Image) {
+              node.latestCameraImage = `data:image/jpeg;base64,${base64Image}`;
+            }
+          }
+        }
+
+        // Push to active alerts & incidents feed
+        pushTelemetry(
+          machineId,
+          result.detected ? lidarDistM : 8.0,
+          timestamp || new Date().toISOString(),
+          undefined,
+          undefined,
+          base64Image ? `data:image/jpeg;base64,${base64Image}` : undefined,
+          targetNodeId
+        );
+
+        sendJson({ ok: true, detected: result.detected, count: result.detected ? 1 : 0 });
+      } catch (err: any) {
+        console.error("❌ Ingestion handler failed:", err.message);
+        sendJson({ error: `Internal error: ${err.message}` }, 500);
+      }
+    }, (err) => {
+      sendJson({ error: `Parsing error: ${err.message}` }, 400);
+    });
     return;
   }
 
