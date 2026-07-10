@@ -264,7 +264,7 @@ function DashboardPage() {
                 label="AI Safety Status" 
                 value={
                   actualHumanDetected 
-                    ? (hasPPEViolation ? "🚨 Worker: No PPE!" : "🚨 Worker: PPE OK") 
+                    ? "🚨 Worker Detected" 
                     : "✅ Area Clear"
                 } 
                 icon={ShieldCheck} 
