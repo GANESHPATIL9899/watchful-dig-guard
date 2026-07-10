@@ -2,6 +2,7 @@ import mqtt from "mqtt";
 import fs from "fs";
 import path from "path";
 import http from "http";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import {detectHuman} from "./roboflow";
 import { URL } from "url";
 import { alerts as seedAlerts } from "./mock/alerts";
@@ -17,6 +18,44 @@ const PORT = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
 const REFRESH_MS = Number(process.env.IOT_SIM_REFRESH_MS ?? 3000);
 
 const USERS_FILE = path.join(process.cwd(), "users.json");
+
+const s3Client = process.env.AWS_ACCESS_KEY_ID ? new S3Client({
+  region: process.env.AWS_REGION || "us-east-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  }
+}) : null;
+
+async function uploadToS3(buffer: Buffer, nodeId: string): Promise<string | null> {
+  if (!s3Client) {
+    console.warn("⚠️ S3 Client not initialized. AWS_ACCESS_KEY_ID environment variable is missing.");
+    return null;
+  }
+
+  const bucketName = process.env.AWS_S3_BUCKET_NAME;
+  if (!bucketName) {
+    console.warn("⚠️ AWS_S3_BUCKET_NAME environment variable is missing.");
+    return null;
+  }
+
+  const key = `captures/${nodeId}/${Date.now()}.jpg`;
+
+  try {
+    await s3Client.send(new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: buffer,
+      ContentType: "image/jpeg",
+    }));
+
+    const region = process.env.AWS_REGION || "us-east-1";
+    return `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+  } catch (err: any) {
+    console.error("❌ Failed to upload image to S3:", err.message);
+    return null;
+  }
+}
 
 function loadUsers(): Record<string, any> {
   try {
@@ -770,11 +809,22 @@ const server = http.createServer((req, res) => {
         console.log(`[Ingest API] Received detection from Node: ${nodeId}, Lidar: ${lidarDistM}m`);
         
         let base64Image = "";
+        let s3Url = "";
         let result = { detected: false, confidence: 0 };
 
         if (imageBuffer && imageBuffer.length > 0) {
+          // 1. Upload to S3 if initialized
+          const uploadedUrl = await uploadToS3(imageBuffer, nodeId);
+          if (uploadedUrl) {
+            s3Url = uploadedUrl;
+            console.log(`✅ Uploaded image successfully to S3: ${s3Url}`);
+          }
+
+          // 2. Convert to Base64 for local fallback & Roboflow
           base64Image = imageBuffer.toString("base64");
-          result = await detectHuman(base64Image, true);
+          
+          // Roboflow will prioritize the S3 URL, falling back to base64 if unconfigured
+          result = await detectHuman(s3Url || base64Image, !s3Url);
         }
 
         // Map incoming nodeId dynamically to machine and node configurations
@@ -806,7 +856,9 @@ const server = http.createServer((req, res) => {
           if (node) {
             node.latestLidarDistance = Number(lidarDistM.toFixed(2));
             node.latestHumanDetected = result.detected;
-            if (base64Image) {
+            if (s3Url) {
+              node.latestCameraImage = s3Url;
+            } else if (base64Image) {
               node.latestCameraImage = `data:image/jpeg;base64,${base64Image}`;
             }
           }
@@ -819,7 +871,7 @@ const server = http.createServer((req, res) => {
           timestamp || new Date().toISOString(),
           undefined,
           undefined,
-          base64Image ? `data:image/jpeg;base64,${base64Image}` : undefined,
+          s3Url || (base64Image ? `data:image/jpeg;base64,${base64Image}` : undefined),
           targetNodeId
         );
 
